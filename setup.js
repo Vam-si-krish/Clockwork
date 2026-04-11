@@ -1,11 +1,13 @@
 // One-time script to create all tables in Supabase.
 // Run with: node setup.js
+// Requires DB_URL in .env
 
+import 'dotenv/config'
 import pkg from 'pg'
 const { Client } = pkg
 
 const client = new Client({
-  connectionString: 'process.env.DB_URL',
+  connectionString: process.env.DB_URL,
   ssl: { rejectUnauthorized: false },
 })
 
