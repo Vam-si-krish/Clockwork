@@ -14,11 +14,13 @@ const useAuthStore = create((set) => ({
     })
   },
 
-  sendMagicLink: async (email) => {
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: window.location.origin },
-    })
+  sendOtp: async (email) => {
+    const { error } = await supabase.auth.signInWithOtp({ email })
+    return { error }
+  },
+
+  verifyOtp: async (email, token) => {
+    const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' })
     return { error }
   },
 

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Trash2, Clock, AlertCircle, ChevronDown } from 'lucide-react'
+import { Plus, Trash2, Clock, AlertCircle, Pencil } from 'lucide-react'
 import useShiftStore from '../store/useShiftStore'
 import useCompanyStore from '../store/useCompanyStore'
 import { calcHours, calcPay, formatCurrency } from '../utils/calculations'
@@ -14,27 +14,32 @@ function fmtDate(dateStr) {
 }
 
 export default function Shifts() {
-  const { shifts, addShift, deleteShift } = useShiftStore()
-  const { companies, getCompanyById }     = useCompanyStore()
+  const { shifts, addShift, updateShift, deleteShift } = useShiftStore()
+  const { companies, getCompanyById }                  = useCompanyStore()
 
   const [form, setForm]         = useState(BLANK)
   const [showForm, setShowForm] = useState(false)
+  const [editId, setEditId]     = useState(null)
   const [filterCo, setFilterCo] = useState('all')
 
   const openAdd = () => {
     setForm({ ...BLANK, companyId: companies[0]?.id ?? '' })
+    setEditId(null)
     setShowForm(true)
   }
 
-  const close = () => { setShowForm(false); setForm(BLANK) }
+  const openEdit = (s) => {
+    setForm({ companyId: s.companyId, date: s.date, startTime: s.startTime, endTime: s.endTime })
+    setEditId(s.id)
+    setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
-  const previewHours = form.startTime && form.endTime
-    ? calcHours(form.startTime, form.endTime)
-    : null
+  const close = () => { setShowForm(false); setForm(BLANK); setEditId(null) }
 
-  const previewPay = previewHours !== null && form.companyId
-    ? calcPay(previewHours, getCompanyById(form.companyId)?.hourlyRate ?? 0)
-    : null
+  const previewHours = form.startTime && form.endTime ? calcHours(form.startTime, form.endTime) : null
+  const previewPay   = previewHours !== null && form.companyId
+    ? calcPay(previewHours, getCompanyById(form.companyId)?.hourlyRate ?? 0) : null
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -42,7 +47,11 @@ export default function Shifts() {
     if (!company) return
     const hours = calcHours(form.startTime, form.endTime)
     const pay   = calcPay(hours, company.hourlyRate)
-    addShift({ ...form, hours, pay, hourlyRate: company.hourlyRate })
+    if (editId) {
+      updateShift(editId, { ...form, hours, pay, hourlyRate: company.hourlyRate })
+    } else {
+      addShift({ ...form, hours, pay, hourlyRate: company.hourlyRate })
+    }
     close()
   }
 
@@ -69,7 +78,6 @@ export default function Shifts() {
         </button>
       </div>
 
-      {/* No-company warning */}
       {companies.length === 0 && (
         <div className="flex items-start gap-3 p-4 mb-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 text-sm">
           <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
@@ -77,13 +85,13 @@ export default function Shifts() {
         </div>
       )}
 
-      {/* ── Inline form ── */}
+      {/* ── Form (add & edit) ── */}
       {showForm && (
         <div className="mb-4 bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-          <h3 className="text-base font-semibold text-gray-900 mb-4">New Shift</h3>
+          <h3 className="text-base font-semibold text-gray-900 mb-4">
+            {editId ? 'Edit Shift' : 'New Shift'}
+          </h3>
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-
-            {/* Company */}
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1.5">Client</label>
               <select
@@ -93,71 +101,49 @@ export default function Shifts() {
                 required
               >
                 <option value="" disabled>Select…</option>
-                {companies.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
+                {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
 
-            {/* Date */}
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1.5">Date</label>
-              <input
-                type="date"
-                value={form.date}
+              <input type="date" value={form.date}
                 onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
                 className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                required
-              />
+                required />
             </div>
 
-            {/* Start + End side by side */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1.5">Start</label>
-                <input
-                  type="time"
-                  value={form.startTime}
+                <input type="time" value={form.startTime}
                   onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))}
                   className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  required
-                />
+                  required />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1.5">End</label>
-                <input
-                  type="time"
-                  value={form.endTime}
+                <input type="time" value={form.endTime}
                   onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))}
                   className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  required
-                />
+                  required />
               </div>
             </div>
 
-            {/* Live preview */}
             {previewHours !== null && (
               <div className="px-4 py-3 bg-brand-50 border border-brand-100 rounded-xl text-sm text-center">
                 <span className="text-brand-700 font-semibold">{previewHours.toFixed(2)} hrs</span>
-                {previewPay !== null && (
-                  <span className="text-brand-500 ml-2">= {formatCurrency(previewPay)}</span>
-                )}
+                {previewPay !== null && <span className="text-brand-500 ml-2">= {formatCurrency(previewPay)}</span>}
               </div>
             )}
 
-            {/* Buttons */}
             <div className="flex gap-2 pt-1">
-              <button
-                type="submit"
-                className="flex-1 py-3 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 active:bg-brand-800 transition-colors"
-              >
-                Save shift
+              <button type="submit"
+                className="flex-1 py-3 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 active:bg-brand-800 transition-colors">
+                {editId ? 'Save changes' : 'Save shift'}
               </button>
-              <button
-                type="button"
-                onClick={close}
-                className="flex-1 py-3 text-gray-600 text-sm font-medium rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors"
-              >
+              <button type="button" onClick={close}
+                className="flex-1 py-3 text-gray-600 text-sm font-medium rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors">
                 Cancel
               </button>
             </div>
@@ -167,33 +153,23 @@ export default function Shifts() {
 
       {/* ── Filter bar ── */}
       {shifts.length > 0 && (
-        <div className="flex gap-2 mb-3 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-none">
-          <button
-            onClick={() => setFilterCo('all')}
+        <div className="flex gap-2 mb-3 overflow-x-auto pb-1 -mx-4 px-4">
+          <button onClick={() => setFilterCo('all')}
             className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              filterCo === 'all'
-                ? 'bg-brand-600 text-white'
-                : 'bg-white border border-gray-200 text-gray-600'
-            }`}
-          >
+              filterCo === 'all' ? 'bg-brand-600 text-white' : 'bg-white border border-gray-200 text-gray-600'}`}>
             All
           </button>
           {companies.map(c => (
-            <button
-              key={c.id}
-              onClick={() => setFilterCo(c.id)}
+            <button key={c.id} onClick={() => setFilterCo(c.id)}
               className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                filterCo === c.id ? 'text-white' : 'bg-white border border-gray-200 text-gray-600'
-              }`}
-              style={filterCo === c.id ? { backgroundColor: c.color } : {}}
-            >
+                filterCo === c.id ? 'text-white' : 'bg-white border border-gray-200 text-gray-600'}`}
+              style={filterCo === c.id ? { backgroundColor: c.color } : {}}>
               {c.name}
             </button>
           ))}
         </div>
       )}
 
-      {/* ── Empty state ── */}
       {visible.length === 0 && companies.length > 0 && (
         <div className="text-center py-16 bg-white border border-dashed border-gray-200 rounded-xl">
           <Clock size={36} className="mx-auto text-gray-300 mb-3" />
@@ -202,42 +178,40 @@ export default function Shifts() {
         </div>
       )}
 
-      {/* ── Shift list ── */}
       {visible.length > 0 && (
         <>
-          {/* Mobile cards */}
+          {/* ── Mobile cards ── */}
           <div className="md:hidden bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm divide-y divide-gray-100">
             {visible.map(s => {
               const company = getCompanyById(s.companyId)
               return (
                 <div key={s.id} className="px-4 py-3.5 flex items-start gap-3">
-                  <div
-                    className="w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0"
-                    style={{ backgroundColor: company?.color ?? '#9ca3af' }}
-                  />
+                  <div className="w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0"
+                    style={{ backgroundColor: company?.color ?? '#9ca3af' }} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <p className="font-semibold text-gray-900 text-sm truncate">{company?.name ?? '—'}</p>
                       <p className="font-semibold text-gray-900 text-sm flex-shrink-0">{formatCurrency(s.pay)}</p>
                     </div>
                     <div className="flex items-center justify-between mt-0.5">
-                      <p className="text-xs text-gray-400">
-                        {fmtDate(s.date)} · {s.startTime}–{s.endTime}
-                      </p>
+                      <p className="text-xs text-gray-400">{fmtDate(s.date)} · {s.startTime}–{s.endTime}</p>
                       <p className="text-xs text-gray-400">{s.hours.toFixed(2)}h</p>
                     </div>
                     <div className="flex items-center justify-between mt-1.5">
                       <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                        s.paid ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
-                      }`}>
+                        s.paid ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
                         {s.paid ? 'Paid' : 'Unpaid'}
                       </span>
-                      <button
-                        onClick={() => deleteShift(s.id)}
-                        className="p-1.5 text-gray-300 hover:text-red-500 rounded-lg transition-colors"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      <div className="flex gap-1">
+                        <button onClick={() => openEdit(s)}
+                          className="p-1.5 text-gray-300 hover:text-brand-500 rounded-lg transition-colors">
+                          <Pencil size={13} />
+                        </button>
+                        <button onClick={() => deleteShift(s.id)}
+                          className="p-1.5 text-gray-300 hover:text-red-500 rounded-lg transition-colors">
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -245,7 +219,7 @@ export default function Shifts() {
             })}
           </div>
 
-          {/* Desktop table */}
+          {/* ── Desktop table ── */}
           <div className="hidden md:block bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-200">
@@ -266,9 +240,7 @@ export default function Shifts() {
                     <tr key={s.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-2">
-                          {company && (
-                            <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: company.color }} />
-                          )}
+                          {company && <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: company.color }} />}
                           <span className="font-medium text-gray-900">{company?.name ?? '—'}</span>
                         </div>
                       </td>
@@ -278,18 +250,21 @@ export default function Shifts() {
                       <td className="px-5 py-3.5 text-right font-semibold text-gray-900">{formatCurrency(s.pay)}</td>
                       <td className="px-5 py-3.5">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          s.paid ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
-                        }`}>
+                          s.paid ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
                           {s.paid ? 'Paid' : 'Unpaid'}
                         </span>
                       </td>
                       <td className="px-3 py-3.5">
-                        <button
-                          onClick={() => deleteShift(s.id)}
-                          className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        <div className="flex gap-1">
+                          <button onClick={() => openEdit(s)}
+                            className="p-1.5 text-gray-300 hover:text-brand-500 hover:bg-brand-50 rounded-lg transition-colors">
+                            <Pencil size={14} />
+                          </button>
+                          <button onClick={() => deleteShift(s.id)}
+                            className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )

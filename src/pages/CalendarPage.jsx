@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, Plus, X, Trash2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, X, Trash2, Pencil } from 'lucide-react'
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar'
 import { format, parse, startOfWeek, getDay } from 'date-fns'
 import { enUS } from 'date-fns/locale'
@@ -30,8 +30,83 @@ function buildGrid(year, month) {
   return cells
 }
 
+/* ── Editable shift card (used inside DaySheet) ── */
+function ShiftCard({ shift: s, company, companies, getCompanyById, onDelete, onSave }) {
+  const [editing, setEditing] = useState(false)
+  const [form, setForm]       = useState({ companyId: s.companyId, startTime: s.startTime, endTime: s.endTime })
+
+  const previewHours = form.startTime && form.endTime ? calcHours(form.startTime, form.endTime) : null
+  const previewPay   = previewHours !== null && form.companyId
+    ? calcPay(previewHours, getCompanyById(form.companyId)?.hourlyRate ?? 0) : null
+
+  const handleSave = () => {
+    const c = getCompanyById(form.companyId)
+    if (!c) return
+    const hours = calcHours(form.startTime, form.endTime)
+    const pay   = calcPay(hours, c.hourlyRate)
+    onSave({ ...form, hours, pay, hourlyRate: c.hourlyRate })
+    setEditing(false)
+  }
+
+  if (editing) {
+    return (
+      <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 space-y-2">
+        <select value={form.companyId} onChange={e => setForm(f => ({ ...f, companyId: e.target.value }))}
+          className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+          {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        <div className="grid grid-cols-2 gap-2">
+          <input type="time" value={form.startTime}
+            onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))}
+            className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+          <input type="time" value={form.endTime}
+            onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))}
+            className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+        </div>
+        {previewHours !== null && (
+          <div className="text-xs text-center text-brand-600 font-medium">
+            {previewHours.toFixed(2)} hrs {previewPay !== null && `= ${formatCurrency(previewPay)}`}
+          </div>
+        )}
+        <div className="flex gap-2">
+          <button onClick={handleSave}
+            className="flex-1 py-2 bg-brand-600 text-white text-xs font-semibold rounded-xl">Save</button>
+          <button onClick={() => setEditing(false)}
+            className="flex-1 py-2 border border-gray-200 text-gray-600 text-xs font-medium rounded-xl">Cancel</button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl px-4 py-3.5 flex items-center gap-3"
+      style={{ borderLeftWidth: 4, borderLeftColor: company?.color ?? '#9ca3af' }}>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between">
+          <p className="font-semibold text-gray-900 text-sm">{company?.name ?? '—'}</p>
+          <p className="font-semibold text-gray-900 text-sm">{formatCurrency(s.pay)}</p>
+        </div>
+        <div className="flex items-center justify-between mt-0.5">
+          <p className="text-xs text-gray-400">{s.startTime}–{s.endTime}</p>
+          <p className="text-xs text-gray-400">{s.hours.toFixed(2)}h</p>
+        </div>
+      </div>
+      <div className="flex gap-1 flex-shrink-0">
+        <button onClick={() => setEditing(true)}
+          className="p-2 text-gray-300 hover:text-brand-500 rounded-lg transition-colors">
+          <Pencil size={13} />
+        </button>
+        <button onClick={onDelete}
+          className="p-2 text-gray-300 hover:text-red-500 rounded-lg transition-colors">
+          <Trash2 size={14} />
+        </button>
+      </div>
+    </div>
+  )
+}
+
 /* ── Bottom sheet ── */
-function DaySheet({ date, shifts, companies, getCompanyById, addShift, deleteShift, onClose }) {
+function DaySheet({ date, shifts, companies, getCompanyById, addShift, deleteShift, updateShift, onClose }) {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm]         = useState({ ...BLANK, companyId: companies[0]?.id ?? '' })
 
@@ -159,30 +234,17 @@ function DaySheet({ date, shifts, companies, getCompanyById, addShift, deleteShi
             </div>
           )}
 
-          {shifts.map(s => {
-            const company = getCompanyById(s.companyId)
-            return (
-              <div key={s.id}
-                className="bg-white border border-gray-200 rounded-xl px-4 py-3.5 flex items-center gap-3"
-                style={{ borderLeftWidth: 4, borderLeftColor: company?.color ?? '#9ca3af' }}
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <p className="font-semibold text-gray-900 text-sm">{company?.name ?? '—'}</p>
-                    <p className="font-semibold text-gray-900 text-sm">{formatCurrency(s.pay)}</p>
-                  </div>
-                  <div className="flex items-center justify-between mt-0.5">
-                    <p className="text-xs text-gray-400">{s.startTime}–{s.endTime}</p>
-                    <p className="text-xs text-gray-400">{s.hours.toFixed(2)}h</p>
-                  </div>
-                </div>
-                <button onClick={() => deleteShift(s.id)}
-                  className="p-2 text-gray-300 hover:text-red-500 rounded-lg flex-shrink-0">
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            )
-          })}
+          {shifts.map(s => (
+            <ShiftCard
+              key={s.id}
+              shift={s}
+              company={getCompanyById(s.companyId)}
+              companies={companies}
+              getCompanyById={getCompanyById}
+              onDelete={() => deleteShift(s.id)}
+              onSave={(updates) => updateShift(s.id, updates)}
+            />
+          ))}
 
           {/* Bottom padding so content clears the safe area */}
           <div className="h-4" />
@@ -194,7 +256,7 @@ function DaySheet({ date, shifts, companies, getCompanyById, addShift, deleteShi
 
 /* ── Mobile calendar grid ── */
 function MobileCalendar() {
-  const { shifts, addShift, deleteShift } = useShiftStore()
+  const { shifts, addShift, deleteShift, updateShift } = useShiftStore()
   const { companies, getCompanyById }     = useCompanyStore()
 
   const today = new Date()
@@ -304,9 +366,131 @@ function MobileCalendar() {
           getCompanyById={getCompanyById}
           addShift={addShift}
           deleteShift={deleteShift}
+          updateShift={updateShift}
           onClose={() => setSelected(null)}
         />
       )}
+    </div>
+  )
+}
+
+/* ── Desktop log/edit modal ── */
+// shift = existing shift object when editing, null when logging new
+function DesktopLogModal({ date, shift, onClose }) {
+  const { addShift, updateShift }     = useShiftStore()
+  const { companies, getCompanyById } = useCompanyStore()
+
+  const pad    = n => String(n).padStart(2, '0')
+  const toHHmm = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`
+
+  const [form, setForm] = useState(shift ? {
+    companyId: shift.companyId,
+    startTime: shift.startTime,
+    endTime:   shift.endTime,
+  } : {
+    companyId: companies[0]?.id ?? '',
+    startTime: toHHmm(date),
+    endTime:   toHHmm(new Date(date.getTime() + 60 * 60 * 1000)),
+  })
+
+  const dateStr = shift
+    ? shift.date
+    : `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+
+  const previewHours = form.startTime && form.endTime ? calcHours(form.startTime, form.endTime) : null
+  const previewPay   = previewHours !== null && form.companyId
+    ? calcPay(previewHours, getCompanyById(form.companyId)?.hourlyRate ?? 0) : null
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    const company = getCompanyById(form.companyId)
+    if (!company) return
+    const hours = calcHours(form.startTime, form.endTime)
+    const pay   = calcPay(hours, company.hourlyRate)
+    if (shift) {
+      updateShift(shift.id, { ...form, hours, pay, hourlyRate: company.hourlyRate })
+    } else {
+      addShift({ companyId: form.companyId, date: dateStr, startTime: form.startTime, endTime: form.endTime, hours, pay, hourlyRate: company.hourlyRate })
+    }
+    onClose()
+  }
+
+  const label = (shift
+    ? new Date(shift.date + 'T00:00:00')
+    : date
+  ).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
+
+      {/* Modal */}
+      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h3 className="text-base font-semibold text-gray-900">{shift ? 'Edit shift' : 'Log work'}</h3>
+            <p className="text-xs text-gray-400 mt-0.5">{label}</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg">
+            <X size={18} />
+          </button>
+        </div>
+
+        {companies.length === 0 ? (
+          <p className="text-sm text-gray-500 text-center py-4">Add a client first before logging shifts.</p>
+        ) : (
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">Client</label>
+              <select
+                value={form.companyId}
+                onChange={e => setForm(f => ({ ...f, companyId: e.target.value }))}
+                className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+                required
+              >
+                <option value="" disabled>Select…</option>
+                {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">Start</label>
+                <input type="time" value={form.startTime}
+                  onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  required />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">End</label>
+                <input type="time" value={form.endTime}
+                  onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  required />
+              </div>
+            </div>
+
+            {previewHours !== null && (
+              <div className="px-4 py-2.5 bg-brand-50 border border-brand-100 rounded-xl text-sm text-center">
+                <span className="text-brand-700 font-semibold">{previewHours.toFixed(2)} hrs</span>
+                {previewPay !== null && <span className="text-brand-500 ml-2">= {formatCurrency(previewPay)}</span>}
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-1">
+              <button type="submit"
+                className="flex-1 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors">
+                {shift ? 'Save changes' : 'Save shift'}
+              </button>
+              <button type="button" onClick={onClose}
+                className="flex-1 py-2.5 text-gray-600 text-sm font-medium rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors">
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
     </div>
   )
 }
@@ -315,6 +499,8 @@ function MobileCalendar() {
 export default function CalendarPage() {
   const { shifts }         = useShiftStore()
   const { getCompanyById } = useCompanyStore()
+  const [modalDate, setModalDate]   = useState(null)
+  const [editShift, setEditShift]   = useState(null)  // shift object being edited
 
   const events = shifts.flatMap(s => {
     const company  = getCompanyById(s.companyId)
@@ -370,8 +556,24 @@ export default function CalendarPage() {
           eventPropGetter={eventPropGetter}
           views={['month', 'week']} defaultView="month"
           style={{ height: '100%' }}
+          selectable
+          onSelectSlot={({ start }) => { setEditShift(null); setModalDate(start) }}
+          onSelectEvent={event => {
+            const s = shifts.find(sh => sh.id === event.id || event.id === sh.id + '-a')
+            if (s) { setModalDate(null); setEditShift(s) }
+          }}
         />
       </div>
+
+      {/* Desktop log modal (new shift) */}
+      {modalDate && !editShift && (
+        <DesktopLogModal date={modalDate} shift={null} onClose={() => setModalDate(null)} />
+      )}
+
+      {/* Desktop edit modal (existing shift) */}
+      {editShift && (
+        <DesktopLogModal date={null} shift={editShift} onClose={() => setEditShift(null)} />
+      )}
     </div>
   )
 }
