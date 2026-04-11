@@ -65,7 +65,7 @@ export default function TimerWidget() {
     if (company) {
       const startStr = toHHmm(start)
       const endStr   = toHHmm(end)
-      const dateStr  = start.toISOString().slice(0, 10)
+      const dateStr  = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`
       const hours    = calcHours(startStr, endStr)
       const pay      = calcPay(hours, company.hourlyRate)
       addShift({ companyId, date: dateStr, startTime: startStr, endTime: endStr, hours, pay, hourlyRate: company.hourlyRate })

@@ -110,6 +110,13 @@ function DaySheet({ date, shifts, companies, getCompanyById, addShift, deleteShi
   const [showForm, setShowForm] = useState(false)
   const [form, setForm]         = useState({ ...BLANK, companyId: companies[0]?.id ?? '' })
 
+  // Lock body scroll on iOS while sheet is open
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [])
+
   // Reset form when sheet opens for a new date
   useEffect(() => {
     setShowForm(false)
@@ -139,12 +146,12 @@ function DaySheet({ date, shifts, companies, getCompanyById, addShift, deleteShi
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/30 z-40"
+        className="fixed inset-0 bg-black/30 z-[60]"
         onClick={onClose}
       />
 
       {/* Sheet */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-xl max-h-[80vh] flex flex-col">
+      <div className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-2xl shadow-xl max-h-[80vh] flex flex-col">
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
           <div className="w-10 h-1 bg-gray-200 rounded-full" />
@@ -170,7 +177,10 @@ function DaySheet({ date, shifts, companies, getCompanyById, addShift, deleteShi
         </div>
 
         {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+        <div
+          className="flex-1 overflow-y-auto px-4 py-3 space-y-3"
+          style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
+        >
 
           {/* Log form */}
           {showForm && (
@@ -246,8 +256,8 @@ function DaySheet({ date, shifts, companies, getCompanyById, addShift, deleteShi
             />
           ))}
 
-          {/* Bottom padding so content clears the safe area */}
-          <div className="h-4" />
+          {/* Bottom padding so content clears the nav bar + safe area */}
+          <div className="h-20" />
         </div>
       </div>
     </>
@@ -353,9 +363,6 @@ function MobileCalendar() {
           })}
         </div>
       </div>
-
-      {/* Hint */}
-      <p className="text-center text-xs text-gray-400 mt-3">Tap a date to view or log shifts</p>
 
       {/* Bottom sheet */}
       {selected && (

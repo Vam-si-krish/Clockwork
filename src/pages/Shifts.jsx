@@ -1,10 +1,13 @@
 import { useState } from 'react'
-import { Plus, Trash2, Clock, AlertCircle, Pencil } from 'lucide-react'
+import { Plus, Trash2, Clock, AlertCircle, Pencil, CheckCircle2, Circle } from 'lucide-react'
 import useShiftStore from '../store/useShiftStore'
 import useCompanyStore from '../store/useCompanyStore'
 import { calcHours, calcPay, formatCurrency } from '../utils/calculations'
 
-const today = () => new Date().toISOString().slice(0, 10)
+const today = () => {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 const BLANK  = { companyId: '', date: today(), startTime: '', endTime: '' }
 
 function fmtDate(dateStr) {
@@ -14,7 +17,7 @@ function fmtDate(dateStr) {
 }
 
 export default function Shifts() {
-  const { shifts, addShift, updateShift, deleteShift } = useShiftStore()
+  const { shifts, addShift, updateShift, deleteShift, markPaid } = useShiftStore()
   const { companies, getCompanyById }                  = useCompanyStore()
 
   const [form, setForm]         = useState(BLANK)
@@ -198,10 +201,13 @@ export default function Shifts() {
                       <p className="text-xs text-gray-400">{s.hours.toFixed(2)}h</p>
                     </div>
                     <div className="flex items-center justify-between mt-1.5">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                        s.paid ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                      <button
+                        onClick={() => markPaid(s.id, !s.paid)}
+                        className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full transition-colors ${
+                          s.paid ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                        {s.paid ? <CheckCircle2 size={11} /> : <Circle size={11} />}
                         {s.paid ? 'Paid' : 'Unpaid'}
-                      </span>
+                      </button>
                       <div className="flex gap-1">
                         <button onClick={() => openEdit(s)}
                           className="p-1.5 text-gray-300 hover:text-brand-500 rounded-lg transition-colors">
@@ -249,10 +255,13 @@ export default function Shifts() {
                       <td className="px-5 py-3.5 text-right font-medium text-gray-900">{s.hours.toFixed(2)}h</td>
                       <td className="px-5 py-3.5 text-right font-semibold text-gray-900">{formatCurrency(s.pay)}</td>
                       <td className="px-5 py-3.5">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          s.paid ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                        <button
+                          onClick={() => markPaid(s.id, !s.paid)}
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors ${
+                            s.paid ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'}`}>
+                          {s.paid ? <CheckCircle2 size={11} /> : <Circle size={11} />}
                           {s.paid ? 'Paid' : 'Unpaid'}
-                        </span>
+                        </button>
                       </td>
                       <td className="px-3 py-3.5">
                         <div className="flex gap-1">
