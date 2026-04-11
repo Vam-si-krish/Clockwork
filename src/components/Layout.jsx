@@ -7,30 +7,35 @@ import {
   Building2,
   ListTodo,
   BarChart2,
+  LogOut,
 } from 'lucide-react'
 import useCompanyStore from '../store/useCompanyStore'
 import useShiftStore from '../store/useShiftStore'
 import useToDoStore from '../store/useTodoStore'
+import useAuthStore from '../store/useAuthStore'
 
 const navItems = [
-  { to: '/',          label: 'Home',      icon: LayoutDashboard, end: true },
-  { to: '/shifts',    label: 'Shifts',    icon: Clock },
-  { to: '/calendar',  label: 'Calendar',  icon: CalendarDays },
-  { to: '/companies', label: 'Clients',   icon: Building2 },
-  { to: '/todos',     label: 'Todos',     icon: ListTodo },
-  { to: '/reports',   label: 'Reports',   icon: BarChart2 },
+  { to: '/',          label: 'Home',     icon: LayoutDashboard, end: true },
+  { to: '/shifts',    label: 'Shifts',   icon: Clock },
+  { to: '/calendar',  label: 'Calendar', icon: CalendarDays },
+  { to: '/companies', label: 'Clients',  icon: Building2 },
+  { to: '/todos',     label: 'Todos',    icon: ListTodo },
+  { to: '/reports',   label: 'Reports',  icon: BarChart2 },
 ]
 
 export default function Layout() {
   const fetchCompanies = useCompanyStore((s) => s.fetchCompanies)
   const fetchShifts    = useShiftStore((s) => s.fetchShifts)
   const fetchTodos     = useToDoStore((s) => s.fetchTodos)
+  const { user, signOut } = useAuthStore()
 
   useEffect(() => {
     fetchCompanies()
     fetchShifts()
     fetchTodos()
   }, [])
+
+  const email = user?.email ?? ''
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
@@ -59,14 +64,33 @@ export default function Layout() {
             </NavLink>
           ))}
         </nav>
+
+        {/* Desktop: user email + sign out */}
+        <div className="px-3 py-4 border-t border-gray-100 space-y-1">
+          <p className="px-3 text-xs text-gray-400 truncate">{email}</p>
+          <button
+            onClick={signOut}
+            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+          >
+            <LogOut size={16} />
+            Sign out
+          </button>
+        </div>
       </aside>
 
       {/* ── Content column ── */}
       <div className="flex-1 flex flex-col overflow-hidden">
 
         {/* Mobile top bar */}
-        <header className="md:hidden flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3.5">
+        <header className="md:hidden flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
           <h1 className="text-lg font-bold text-brand-600 tracking-tight">Clockwork</h1>
+          <button
+            onClick={signOut}
+            className="p-2 text-gray-400 hover:text-red-500 rounded-xl transition-colors"
+            title="Sign out"
+          >
+            <LogOut size={18} />
+          </button>
         </header>
 
         {/* Page content */}
@@ -76,7 +100,7 @@ export default function Layout() {
       </div>
 
       {/* ── Bottom nav (mobile only) ── */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex z-50 safe-area-pb">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex z-50">
         {navItems.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
