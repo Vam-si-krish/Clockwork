@@ -1,0 +1,17 @@
+<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="180" height="180" fill="#0ea5e9"/>
+  <!-- Clock face -->
+  <circle cx="90" cy="90" r="58" fill="white" fill-opacity="0.15"/>
+  <!-- Tick marks -->
+  <line x1="90" y1="38" x2="90" y2="52" stroke="white" stroke-width="6" stroke-linecap="round" stroke-opacity="0.6"/>
+  <line x1="142" y1="90" x2="128" y2="90" stroke="white" stroke-width="6" stroke-linecap="round" stroke-opacity="0.6"/>
+  <line x1="90" y1="142" x2="90" y2="128" stroke="white" stroke-width="6" stroke-linecap="round" stroke-opacity="0.6"/>
+  <line x1="38" y1="90" x2="52" y2="90" stroke="white" stroke-width="6" stroke-linecap="round" stroke-opacity="0.6"/>
+  <!-- Hour hand ~10 -->
+  <line x1="90" y1="90" x2="58" y2="58" stroke="white" stroke-width="9" stroke-linecap="round"/>
+  <!-- Minute hand ~2 -->
+  <line x1="90" y1="90" x2="118" y2="54" stroke="white" stroke-width="6" stroke-linecap="round"/>
+  <!-- Center cap -->
+  <circle cx="90" cy="90" r="9" fill="white"/>
+</svg>
