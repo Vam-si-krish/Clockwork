@@ -71,6 +71,15 @@ const useShiftStore = create((set) => ({
         shifts: s.shifts.map((sh) => (sh.id === id ? { ...sh, paid } : sh)),
       }))
   },
+
+  markManyPaid: async (ids, paid = true) => {
+    if (!ids.length) return
+    const { error } = await supabase.from('shifts').update({ paid }).in('id', ids)
+    if (!error)
+      set((s) => ({
+        shifts: s.shifts.map((sh) => (ids.includes(sh.id) ? { ...sh, paid } : sh)),
+      }))
+  },
 }))
 
 export default useShiftStore

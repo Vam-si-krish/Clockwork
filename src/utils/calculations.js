@@ -73,15 +73,19 @@ export function formatCurrency(amount) {
  *   { type: 'weekly', weekStartDay: 0–6 }          0=Sun … 6=Sat
  *   { type: 'every_n_days', periodDays: N, anchorDate: 'YYYY-MM-DD' }
  */
-export function getPeriodBounds(payCycle, now = new Date()) {
+/**
+ * Returns { periodStart, periodEnd, payday } for a given pay cycle.
+ * offset: 0 = current period, -1 = previous, -2 = two ago
+ */
+export function getPeriodBounds(payCycle, now = new Date(), offset = 0) {
   if (!payCycle || payCycle.type === 'none') return null
 
   if (payCycle.type === 'weekly') {
-    const startDay = payCycle.weekStartDay ?? 1 // default Monday
+    const startDay = payCycle.weekStartDay ?? 1
     const todayDay = now.getDay()
     const diff = (todayDay - startDay + 7) % 7
     const periodStart = new Date(now)
-    periodStart.setDate(now.getDate() - diff)
+    periodStart.setDate(now.getDate() - diff + offset * 7)
     periodStart.setHours(0, 0, 0, 0)
     const periodEnd = new Date(periodStart)
     periodEnd.setDate(periodStart.getDate() + 6)
@@ -96,9 +100,11 @@ export function getPeriodBounds(payCycle, now = new Date()) {
     const n = payCycle.periodDays ?? 14
     const MS_DAY = 1000 * 60 * 60 * 24
     const daysDiff = Math.floor((now - anchor) / MS_DAY)
-    const periodsElapsed = daysDiff < 0 ? 0 : Math.floor(daysDiff / n)
+    const currentPeriod = daysDiff < 0 ? 0 : Math.floor(daysDiff / n)
+    const target = currentPeriod + offset
+    if (target < 0) return null
     const periodStart = new Date(anchor)
-    periodStart.setDate(anchor.getDate() + periodsElapsed * n)
+    periodStart.setDate(anchor.getDate() + target * n)
     periodStart.setHours(0, 0, 0, 0)
     const periodEnd = new Date(periodStart)
     periodEnd.setDate(periodStart.getDate() + n - 1)

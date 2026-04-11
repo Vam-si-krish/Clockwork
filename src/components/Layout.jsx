@@ -13,6 +13,8 @@ import useCompanyStore from '../store/useCompanyStore'
 import useShiftStore from '../store/useShiftStore'
 import useToDoStore from '../store/useTodoStore'
 import useAuthStore from '../store/useAuthStore'
+import Logo from './Logo'
+import TimerFAB from './TimerFAB'
 
 const navItems = [
   { to: '/',          label: 'Home',     icon: LayoutDashboard, end: true },
@@ -43,7 +45,7 @@ export default function Layout() {
       {/* ── Sidebar (desktop only) ── */}
       <aside className="hidden md:flex w-56 flex-shrink-0 bg-white border-r border-gray-200 flex-col">
         <div className="px-6 py-5 border-b border-gray-100">
-          <h1 className="text-lg font-bold text-brand-600 tracking-tight">Clockwork</h1>
+          <Logo size={28} showText textClassName="text-lg font-bold text-brand-600 tracking-tight" />
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1">
           {navItems.map(({ to, label, icon: Icon, end }) => (
@@ -75,6 +77,17 @@ export default function Layout() {
             <LogOut size={16} />
             Sign out
           </button>
+          <p className="px-3 pt-1 text-xs text-gray-300">
+            Built by{' '}
+            <a
+              href="https://vamsikrish.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-brand-500 transition-colors"
+            >
+              Vamsi Krishna
+            </a>
+          </p>
         </div>
       </aside>
 
@@ -83,7 +96,7 @@ export default function Layout() {
 
         {/* Mobile top bar */}
         <header className="md:hidden flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-          <h1 className="text-lg font-bold text-brand-600 tracking-tight">Clockwork</h1>
+          <Logo size={26} showText textClassName="text-lg font-bold text-brand-600 tracking-tight" />
           <button
             onClick={signOut}
             className="p-2 text-gray-400 hover:text-red-500 rounded-xl transition-colors"
@@ -98,6 +111,9 @@ export default function Layout() {
           <Outlet />
         </main>
       </div>
+
+      {/* ── Timer FAB (mobile only) ── */}
+      <TimerFAB />
 
       {/* ── Bottom nav (mobile only) ── */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex z-50">

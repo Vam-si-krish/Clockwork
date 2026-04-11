@@ -41,8 +41,10 @@ export default function Dashboard() {
         <p className="text-sm text-gray-500 mt-0.5">Your earnings at a glance</p>
       </div>
 
-      {/* ── Timer ── */}
-      <TimerWidget />
+      {/* ── Timer (desktop only — mobile uses the FAB) ── */}
+      <div className="hidden md:block">
+        <TimerWidget />
+      </div>
 
       {/* ── Stat cards ── */}
       <div className="grid grid-cols-2 gap-3">

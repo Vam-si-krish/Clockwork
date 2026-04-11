@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Mail, Send, ArrowRight } from 'lucide-react'
 import useAuthStore from '../store/useAuthStore'
+import Logo from '../components/Logo'
 
 export default function Login() {
   const { sendOtp, verifyOtp } = useAuthStore()
@@ -36,6 +37,9 @@ export default function Login() {
 
         {/* Brand */}
         <div className="text-center mb-8">
+          <div className="flex justify-center mb-3">
+            <Logo size={56} />
+          </div>
           <h1 className="text-3xl font-bold text-brand-600 tracking-tight mb-2">Clockwork</h1>
           <p className="text-gray-500 text-sm">Track your freelance time &amp; earnings</p>
         </div>
@@ -136,6 +140,17 @@ export default function Login() {
 
         <p className="text-center text-xs text-gray-400 mt-5">
           Your data is private and only visible to you.
+        </p>
+        <p className="text-center text-xs text-gray-300 mt-2">
+          Built by{' '}
+          <a
+            href="https://vamsikrish.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-gray-400 hover:text-brand-500 transition-colors"
+          >
+            Vamsi Krishna
+          </a>
         </p>
       </div>
     </div>
