@@ -117,7 +117,7 @@ export default function Layout() {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-4 pb-24 md:p-8 md:pb-8">
+        <main className="flex-1 overflow-y-auto p-4 pb-24 md:p-8 md:pb-8 main-scroll">
           <Outlet />
         </main>
       </div>
@@ -128,6 +128,7 @@ export default function Layout() {
         style={{
           backgroundColor: '#141620',
           boxShadow: '0 -1px 0 #252738, 0 -16px 40px rgba(0,0,0,0.7)',
+          paddingBottom: 'env(safe-area-inset-bottom)',
         }}
       >
         {navItems.map(({ to, label, icon: Icon, end }) => (

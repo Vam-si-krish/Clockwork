@@ -349,7 +349,7 @@ export default function Shifts() {
       {/* ── Slide-in Drawer (add / edit) ── */}
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 z-40 bg-ob-bg/70 backdrop-blur-sm transition-opacity duration-200 ${
+        className={`fixed inset-0 z-[55] bg-ob-bg/70 backdrop-blur-sm transition-opacity duration-200 ${
           showForm ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={close}
@@ -357,7 +357,7 @@ export default function Shifts() {
 
       {/* Panel */}
       <div
-        className={`fixed right-0 top-0 bottom-0 z-50 w-full md:w-[420px] bg-ob-surface border-l border-ob-border flex flex-col shadow-2xl transition-transform duration-300 ease-out ${
+        className={`fixed right-0 top-0 bottom-0 z-[60] w-full md:w-[420px] bg-ob-surface border-l border-ob-border flex flex-col shadow-2xl transition-transform duration-300 ease-out ${
           showForm ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -431,10 +431,10 @@ export default function Shifts() {
           </div>
 
           {/* Start / End */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-3">
             <div>
               <label className="block text-[10px] font-mono text-ob-dim uppercase tracking-[0.1em] mb-2">
-                Start
+                Start time
               </label>
               <input
                 type="time"
@@ -446,7 +446,7 @@ export default function Shifts() {
             </div>
             <div>
               <label className="block text-[10px] font-mono text-ob-dim uppercase tracking-[0.1em] mb-2">
-                End
+                End time
               </label>
               <input
                 type="time"
@@ -510,7 +510,10 @@ export default function Shifts() {
         </form>
 
         {/* Drawer footer */}
-        <div className="px-6 py-5 border-t border-ob-border flex gap-3 flex-shrink-0">
+        <div
+          className="px-6 pt-5 border-t border-ob-border flex gap-3 flex-shrink-0"
+          style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom))' }}
+        >
           <button
             type="submit"
             form="shift-form"

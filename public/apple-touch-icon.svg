@@ -1,17 +1,40 @@
 <svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
   <!-- Background -->
-  <rect width="180" height="180" fill="#0ea5e9"/>
-  <!-- Clock face -->
-  <circle cx="90" cy="90" r="58" fill="white" fill-opacity="0.15"/>
-  <!-- Tick marks -->
-  <line x1="90" y1="38" x2="90" y2="52" stroke="white" stroke-width="6" stroke-linecap="round" stroke-opacity="0.6"/>
-  <line x1="142" y1="90" x2="128" y2="90" stroke="white" stroke-width="6" stroke-linecap="round" stroke-opacity="0.6"/>
-  <line x1="90" y1="142" x2="90" y2="128" stroke="white" stroke-width="6" stroke-linecap="round" stroke-opacity="0.6"/>
-  <line x1="38" y1="90" x2="52" y2="90" stroke="white" stroke-width="6" stroke-linecap="round" stroke-opacity="0.6"/>
-  <!-- Hour hand ~10 -->
-  <line x1="90" y1="90" x2="58" y2="58" stroke="white" stroke-width="9" stroke-linecap="round"/>
-  <!-- Minute hand ~2 -->
-  <line x1="90" y1="90" x2="118" y2="54" stroke="white" stroke-width="6" stroke-linecap="round"/>
-  <!-- Center cap -->
-  <circle cx="90" cy="90" r="9" fill="white"/>
+  <rect width="180" height="180" rx="40" fill="#141620"/>
+  <!-- Outer bezel ring -->
+  <circle cx="90" cy="90" r="74" stroke="#E8A020" stroke-width="2.5" stroke-opacity="0.6"/>
+  <!-- Inner chapter ring -->
+  <circle cx="90" cy="90" r="63" stroke="#E8A020" stroke-width="1.5" stroke-opacity="0.2"/>
+  <!-- Major tick: 12 -->
+  <line x1="90" y1="14" x2="90" y2="30" stroke="#E8A020" stroke-width="7" stroke-linecap="round"/>
+  <!-- Major tick: 3 -->
+  <line x1="166" y1="90" x2="150" y2="90" stroke="#E8A020" stroke-width="7" stroke-linecap="round"/>
+  <!-- Major tick: 6 -->
+  <line x1="90" y1="166" x2="90" y2="150" stroke="#E8A020" stroke-width="7" stroke-linecap="round"/>
+  <!-- Major tick: 9 -->
+  <line x1="14" y1="90" x2="30" y2="90" stroke="#E8A020" stroke-width="7" stroke-linecap="round"/>
+  <!-- Minor ticks (50% opacity) -->
+  <!-- 1 o'clock -->
+  <line x1="128.9" y1="20.8" x2="122.5" y2="31.9" stroke="#E8A020" stroke-width="3.5" stroke-linecap="round" stroke-opacity="0.5"/>
+  <!-- 2 o'clock -->
+  <line x1="159.2" y1="51.1" x2="148.1" y2="57.5" stroke="#E8A020" stroke-width="3.5" stroke-linecap="round" stroke-opacity="0.5"/>
+  <!-- 4 o'clock -->
+  <line x1="159.2" y1="128.9" x2="148.1" y2="122.5" stroke="#E8A020" stroke-width="3.5" stroke-linecap="round" stroke-opacity="0.5"/>
+  <!-- 5 o'clock -->
+  <line x1="128.9" y1="159.2" x2="122.5" y2="148.1" stroke="#E8A020" stroke-width="3.5" stroke-linecap="round" stroke-opacity="0.5"/>
+  <!-- 7 o'clock -->
+  <line x1="51.1" y1="159.2" x2="57.5" y2="148.1" stroke="#E8A020" stroke-width="3.5" stroke-linecap="round" stroke-opacity="0.5"/>
+  <!-- 8 o'clock -->
+  <line x1="20.8" y1="128.9" x2="31.9" y2="122.5" stroke="#E8A020" stroke-width="3.5" stroke-linecap="round" stroke-opacity="0.5"/>
+  <!-- 10 o'clock -->
+  <line x1="20.8" y1="51.1" x2="31.9" y2="57.5" stroke="#E8A020" stroke-width="3.5" stroke-linecap="round" stroke-opacity="0.5"/>
+  <!-- 11 o'clock -->
+  <line x1="51.1" y1="20.8" x2="57.5" y2="31.9" stroke="#E8A020" stroke-width="3.5" stroke-linecap="round" stroke-opacity="0.5"/>
+  <!-- Hour hand — 10 o'clock -->
+  <line x1="90" y1="90" x2="47" y2="65" stroke="#E8A020" stroke-width="9" stroke-linecap="round"/>
+  <!-- Minute hand — 2 o'clock (10 min) -->
+  <line x1="90" y1="90" x2="144" y2="57" stroke="#E8A020" stroke-width="6" stroke-linecap="round"/>
+  <!-- Center hub -->
+  <circle cx="90" cy="90" r="10" fill="#E8A020"/>
+  <circle cx="90" cy="90" r="4.8" fill="#141620"/>
 </svg>

@@ -30,9 +30,9 @@ export default {
         },
       },
       fontFamily: {
-        syne: ['Syne', 'sans-serif'],
+        syne: ['"Syne Variable"', 'Syne', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'monospace'],
-        sans: ['"DM Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['"DM Sans Variable"', '"DM Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
     },
   },

@@ -21,7 +21,7 @@
 body {
   background-color: var(--ob-bg);
   color: var(--ob-text);
-  font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  font-family: 'DM Sans Variable', 'DM Sans', ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -34,6 +34,20 @@ body {
 /* Select / input base reset for dark theme */
 select, input, textarea {
   color-scheme: dark;
+}
+
+/* iOS auto-zoom prevention — Safari zooms the page when focused input font-size < 16px */
+@media screen and (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Safe area: push mobile scroll content above the bottom nav + home indicator */
+@media screen and (max-width: 768px) {
+  .main-scroll {
+    padding-bottom: calc(6rem + env(safe-area-inset-bottom)) !important;
+  }
 }
 
 /* react-big-calendar dark overrides */

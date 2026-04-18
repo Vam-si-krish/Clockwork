@@ -218,13 +218,13 @@ export default function Companies() {
 
       {/* ── Slide-in Drawer ── */}
       <div
-        className={`fixed inset-0 z-40 bg-ob-bg/70 backdrop-blur-sm transition-opacity duration-200 ${
+        className={`fixed inset-0 z-[55] bg-ob-bg/70 backdrop-blur-sm transition-opacity duration-200 ${
           showForm ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={close}
       />
       <div
-        className={`fixed right-0 top-0 bottom-0 z-50 w-full md:w-[440px] bg-ob-surface border-l border-ob-border flex flex-col shadow-2xl transition-transform duration-300 ease-out ${
+        className={`fixed right-0 top-0 bottom-0 z-[60] w-full md:w-[440px] bg-ob-surface border-l border-ob-border flex flex-col shadow-2xl transition-transform duration-300 ease-out ${
           showForm ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -255,7 +255,6 @@ export default function Companies() {
               onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
               placeholder="e.g. Acme Corp"
               className={inputCls}
-              autoFocus
               required
             />
           </div>
@@ -374,7 +373,10 @@ export default function Companies() {
         </div>
 
         {/* Drawer footer */}
-        <div className="px-6 py-5 border-t border-ob-border flex gap-3 flex-shrink-0">
+        <div
+          className="px-6 pt-5 border-t border-ob-border flex gap-3 flex-shrink-0"
+          style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom))' }}
+        >
           <button
             onClick={handleSubmit}
             className="flex-1 py-3 bg-ob-amber/10 border border-ob-amber/30 hover:bg-ob-amber/20 text-ob-amber text-sm font-semibold rounded-xl transition-colors"
