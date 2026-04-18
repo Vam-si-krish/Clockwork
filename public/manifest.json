@@ -4,8 +4,8 @@
   "description": "Freelance time tracking",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f9fafb",
-  "theme_color": "#0ea5e9",
+  "background_color": "#0D0E12",
+  "theme_color": "#0D0E12",
   "icons": [
     {
       "src": "/apple-touch-icon.svg",

@@ -12,18 +12,48 @@ import Reports from './pages/Reports'
 
 function LoadingScreen() {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="min-h-screen bg-ob-bg flex items-center justify-center">
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-brand-600 mb-3">Clockwork</h1>
-        <div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin mx-auto" />
+        <h1 className="text-2xl font-syne font-bold text-ob-amber mb-3">Clockwork</h1>
+        <div className="w-5 h-5 rounded-full animate-spin mx-auto"
+          style={{ border: '2px solid rgba(232,160,32,0.2)', borderTopColor: '#E8A020' }} />
       </div>
     </div>
   )
 }
 
+// Force a reload exactly once when a new service worker takes control.
+// This is the key iOS fix: without this the new SW activates silently but
+// the app shell (cached HTML) stays stale until the user manually refreshes.
+function useSwUpdateReload() {
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return
+
+    let reloading = false
+
+    // When a new SW claims this client, reload to get the fresh bundle
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (reloading) return
+      reloading = true
+      window.location.reload()
+    })
+
+    // iOS PWA doesn't background-check for SW updates — trigger a check
+    // every time the app comes back to the foreground instead
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        navigator.serviceWorker.getRegistration().then(reg => reg?.update())
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [])
+}
+
 export default function App() {
   const { user, loading, init } = useAuthStore()
 
+  useSwUpdateReload()
   useEffect(() => { init() }, [])
 
   if (loading) return <LoadingScreen />
