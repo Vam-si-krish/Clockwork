@@ -14,7 +14,6 @@ import useShiftStore from '../store/useShiftStore'
 import useToDoStore from '../store/useTodoStore'
 import useAuthStore from '../store/useAuthStore'
 import Logo from './Logo'
-import TimerFAB from './TimerFAB'
 
 const navItems = [
   { to: '/',          label: 'Home',     icon: LayoutDashboard, end: true },
@@ -40,14 +39,21 @@ export default function Layout() {
   const email = user?.email ?? ''
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-ob-bg">
 
       {/* ── Sidebar (desktop only) ── */}
-      <aside className="hidden md:flex w-56 flex-shrink-0 bg-white border-r border-gray-200 flex-col">
-        <div className="px-6 py-5 border-b border-gray-100">
-          <Logo size={28} showText textClassName="text-lg font-bold text-brand-600 tracking-tight" />
+      <aside className="hidden md:flex w-56 flex-shrink-0 bg-ob-bg border-r border-ob-border flex-col">
+        {/* Logo */}
+        <div className="px-6 py-5 border-b border-ob-border">
+          <Logo
+            size={26}
+            showText
+            textClassName="text-lg font-syne font-bold text-ob-amber tracking-tight"
+          />
         </div>
-        <nav className="flex-1 px-3 py-4 space-y-1">
+
+        {/* Nav */}
+        <nav className="flex-1 px-3 py-4 space-y-0.5">
           {navItems.map(({ to, label, icon: Icon, end }) => (
             <NavLink
               key={to}
@@ -56,34 +62,34 @@ export default function Layout() {
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   isActive
-                    ? 'bg-brand-50 text-brand-700'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    ? 'bg-ob-amber/[0.08] text-ob-amber'
+                    : 'text-ob-muted hover:bg-ob-raised hover:text-ob-text'
                 }`
               }
             >
-              <Icon size={18} />
+              <Icon size={16} />
               {label}
             </NavLink>
           ))}
         </nav>
 
-        {/* Desktop: user email + sign out */}
-        <div className="px-3 py-4 border-t border-gray-100 space-y-1">
-          <p className="px-3 text-xs text-gray-400 truncate">{email}</p>
+        {/* User */}
+        <div className="px-3 py-4 border-t border-ob-border space-y-1">
+          <p className="px-3 text-[11px] font-mono text-ob-dim truncate">{email}</p>
           <button
             onClick={signOut}
-            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-ob-dim hover:bg-ob-red/10 hover:text-ob-red transition-colors"
           >
-            <LogOut size={16} />
+            <LogOut size={15} />
             Sign out
           </button>
-          <p className="px-3 pt-1 text-xs text-gray-300">
+          <p className="px-3 pt-1 text-[10px] font-mono text-ob-dim/60">
             Built by{' '}
             <a
               href="https://vamsikrish.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-brand-500 transition-colors"
+              className="hover:text-ob-amber transition-colors"
             >
               Vamsi Krishna
             </a>
@@ -95,14 +101,18 @@ export default function Layout() {
       <div className="flex-1 flex flex-col overflow-hidden">
 
         {/* Mobile top bar */}
-        <header className="md:hidden flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-          <Logo size={26} showText textClassName="text-lg font-bold text-brand-600 tracking-tight" />
+        <header className="md:hidden flex-shrink-0 bg-ob-bg border-b border-ob-border px-4 py-3 flex items-center justify-between">
+          <Logo
+            size={24}
+            showText
+            textClassName="text-base font-syne font-bold text-ob-amber tracking-tight"
+          />
           <button
             onClick={signOut}
-            className="p-2 text-gray-400 hover:text-red-500 rounded-xl transition-colors"
+            className="p-2 text-ob-dim hover:text-ob-red rounded-lg transition-colors"
             title="Sign out"
           >
-            <LogOut size={18} />
+            <LogOut size={17} />
           </button>
         </header>
 
@@ -112,11 +122,14 @@ export default function Layout() {
         </main>
       </div>
 
-      {/* ── Timer FAB (mobile only) ── */}
-      <TimerFAB />
-
       {/* ── Bottom nav (mobile only) ── */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex z-50">
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 flex z-50"
+        style={{
+          backgroundColor: '#141620',
+          boxShadow: '0 -1px 0 #252738, 0 -16px 40px rgba(0,0,0,0.7)',
+        }}
+      >
         {navItems.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
@@ -124,11 +137,11 @@ export default function Layout() {
             end={end}
             className={({ isActive }) =>
               `flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition-colors ${
-                isActive ? 'text-brand-600' : 'text-gray-400'
+                isActive ? 'text-ob-amber' : 'text-ob-dim'
               }`
             }
           >
-            <Icon size={21} />
+            <Icon size={20} />
             <span className="text-[10px] font-medium">{label}</span>
           </NavLink>
         ))}

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Play, Square } from 'lucide-react'
+import { Play, Square, ChevronDown } from 'lucide-react'
 import useTimerStore from '../store/useTimerStore'
 import useShiftStore from '../store/useShiftStore'
 import useCompanyStore from '../store/useCompanyStore'
-import { calcHours, calcPay } from '../utils/calculations'
+import { calcHours, calcPay, formatCurrency } from '../utils/calculations'
 
 function pad(n) {
   return String(n).padStart(2, '0')
@@ -43,7 +43,6 @@ export default function TimerWidget() {
     if (isRunning && companyId) setSelectedCompanyId(companyId)
   }, [isRunning, companyId])
 
-  // Keep selector in sync if companies load after mount
   useEffect(() => {
     if (!isRunning && !selectedCompanyId && companies[0]?.id) {
       setSelectedCompanyId(companies[0].id)
@@ -76,63 +75,90 @@ export default function TimerWidget() {
 
   if (companies.length === 0) return null
 
+  // Estimated pay so far
+  const elapsedHours = elapsed / 3600000
+  const earnedSoFar  = activeCompany ? calcPay(elapsedHours, activeCompany.hourlyRate) : 0
+
   return (
     <div
-      className="mb-6 rounded-2xl border p-4 shadow-sm"
-      style={{
-        backgroundColor: activeCompany ? `${activeCompany.color}10` : '#f8fafc',
-        borderColor:     activeCompany ? `${activeCompany.color}40` : '#e2e8f0',
-      }}
+      className={`mb-6 rounded-2xl border transition-colors overflow-hidden ${
+        isRunning
+          ? 'bg-ob-surface border-ob-amber/30'
+          : 'bg-ob-surface border-ob-border'
+      }`}
     >
-      {/* Elapsed time — big and central */}
-      <div className="text-center mb-4">
-        {isRunning ? (
-          <>
-            <p className="text-5xl font-mono font-bold tracking-widest text-gray-900 tabular-nums">
-              {formatElapsed(elapsed)}
-            </p>
-            <p className="text-xs text-gray-400 mt-1.5">
-              Started {toHHmm(new Date(startTime))}
-              {activeCompany && ` · ${activeCompany.name}`}
-            </p>
-          </>
-        ) : (
-          <p className="text-sm text-gray-400 py-2">Select a client and tap Start</p>
-        )}
-      </div>
+      {/* Running indicator bar */}
+      {isRunning && (
+        <div className="h-0.5 bg-ob-amber/20">
+          <div className="h-full bg-ob-amber animate-pulse" style={{ width: '100%' }} />
+        </div>
+      )}
 
-      {/* Company selector + button row */}
-      <div className="flex gap-3 items-center">
-        <select
-          value={isRunning ? companyId : selectedCompanyId}
-          onChange={e => setSelectedCompanyId(e.target.value)}
-          disabled={isRunning}
-          className="flex-1 border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-60 bg-white"
-        >
-          {companies.map(c => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </select>
+      <div className="p-4 flex items-center gap-4">
+        {/* Company selector */}
+        <div className="relative flex-1 min-w-0">
+          <select
+            value={isRunning ? companyId : selectedCompanyId}
+            onChange={e => setSelectedCompanyId(e.target.value)}
+            disabled={isRunning}
+            className="w-full appearance-none bg-ob-raised border border-ob-border rounded-xl px-3 py-2.5 pr-8 text-sm text-ob-text font-medium focus:outline-none focus:border-ob-amber/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {companies.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+          <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ob-dim pointer-events-none" />
+        </div>
 
+        {/* Elapsed time */}
+        <div className="text-center flex-shrink-0">
+          {isRunning ? (
+            <div>
+              <p className="text-2xl font-mono font-semibold tabular-nums text-ob-amber leading-none">
+                {formatElapsed(elapsed)}
+              </p>
+              <p className="text-[10px] font-mono text-ob-dim mt-1">
+                {formatCurrency(earnedSoFar)} earned
+              </p>
+            </div>
+          ) : (
+            <p className="text-sm font-mono text-ob-dim">--:--:--</p>
+          )}
+        </div>
+
+        {/* Start / Stop */}
         {isRunning ? (
           <button
             onClick={handleStop}
-            className="flex items-center gap-2 px-6 py-3 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white text-sm font-semibold rounded-xl transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 bg-ob-red/10 border border-ob-red/30 hover:bg-ob-red/20 text-ob-red text-sm font-semibold rounded-xl transition-colors flex-shrink-0"
           >
-            <Square size={15} fill="currentColor" />
+            <Square size={13} fill="currentColor" />
             Stop
           </button>
         ) : (
           <button
             onClick={handleStart}
             disabled={!selectedCompanyId}
-            className="flex items-center gap-2 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-40"
+            className="flex items-center gap-2 px-5 py-2.5 bg-ob-amber/10 border border-ob-amber/30 hover:bg-ob-amber/20 text-ob-amber text-sm font-semibold rounded-xl transition-colors flex-shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            <Play size={15} fill="currentColor" />
+            <Play size={13} fill="currentColor" />
             Start
           </button>
         )}
       </div>
+
+      {/* Running meta */}
+      {isRunning && (
+        <div className="px-4 pb-3 flex items-center gap-2">
+          <div
+            className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+            style={{ backgroundColor: activeCompany?.color ?? '#E8A020' }}
+          />
+          <p className="text-[11px] font-mono text-ob-dim">
+            {activeCompany?.name} · started {toHHmm(new Date(startTime))}
+          </p>
+        </div>
+      )}
     </div>
   )
 }

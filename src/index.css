@@ -5,6 +5,99 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --ob-bg:      #0D0E12;
+  --ob-surface: #141620;
+  --ob-raised:  #1C1E2A;
+  --ob-border:  #252738;
+  --ob-text:    #F0EBE1;
+  --ob-muted:   #8E8EA0;
+  --ob-dim:     #4E4E60;
+  --ob-amber:   #E8A020;
+  --ob-green:   #4ADE80;
+  --ob-red:     #F87171;
+}
+
 body {
-  @apply bg-gray-50 text-gray-900;
+  background-color: var(--ob-bg);
+  color: var(--ob-text);
+  font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--ob-border); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--ob-dim); }
+
+/* Select / input base reset for dark theme */
+select, input, textarea {
+  color-scheme: dark;
+}
+
+/* react-big-calendar dark overrides */
+.rbc-calendar {
+  background: var(--ob-surface);
+  color: var(--ob-text);
+}
+.rbc-toolbar button {
+  color: var(--ob-muted);
+  border-color: var(--ob-border);
+}
+.rbc-toolbar button:hover,
+.rbc-toolbar button.rbc-active {
+  background: var(--ob-raised);
+  color: var(--ob-amber);
+  border-color: var(--ob-amber);
+}
+.rbc-header, .rbc-month-row, .rbc-day-bg, .rbc-time-view,
+.rbc-time-header, .rbc-time-content {
+  border-color: var(--ob-border) !important;
+}
+.rbc-today {
+  background: rgba(232, 160, 32, 0.06) !important;
+}
+.rbc-off-range-bg {
+  background: rgba(13, 14, 18, 0.6) !important;
+}
+.rbc-off-range .rbc-button-link {
+  color: var(--ob-dim) !important;
+}
+
+/* ── Compact event pills (month view) ── */
+/* Strip the default filled block so our custom renderer controls appearance */
+.rbc-month-view .rbc-event,
+.rbc-month-view .rbc-event:focus {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 1px 4px !important;
+  outline: none !important;
+}
+.rbc-month-view .rbc-event-content {
+  overflow: hidden;
+}
+/* Show-more link */
+.rbc-show-more {
+  color: var(--ob-amber) !important;
+  font-size: 10px !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  background: transparent !important;
+  padding: 0 4px !important;
+}
+.rbc-show-more:hover {
+  color: var(--ob-text) !important;
+}
+/* Week/day view keeps colored blocks — only strip in month */
+.rbc-time-view .rbc-event {
+  border-radius: 4px !important;
+  border: none !important;
+  font-size: 11px !important;
+}
+/* Day number color */
+.rbc-button-link {
+  color: var(--ob-muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
 }

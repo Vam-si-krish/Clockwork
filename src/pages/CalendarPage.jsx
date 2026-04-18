@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { ChevronLeft, ChevronRight, Plus, X, Trash2, Pencil } from 'lucide-react'
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar'
 import { format, parse, startOfWeek, getDay } from 'date-fns'
@@ -7,7 +7,7 @@ import useShiftStore from '../store/useShiftStore'
 import useCompanyStore from '../store/useCompanyStore'
 import { formatCurrency, calcHours, calcPay } from '../utils/calculations'
 
-/* ── react-big-calendar (desktop only) ── */
+/* ── react-big-calendar localizer ── */
 const localizer = dateFnsLocalizer({
   format, parse,
   startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 1 }),
@@ -30,10 +30,26 @@ function buildGrid(year, month) {
   return cells
 }
 
-/* ── Editable shift card (used inside DaySheet) ── */
+/* ── Shared dark input style ── */
+const inputCls = 'w-full bg-ob-bg border border-ob-border rounded-xl px-3 py-2.5 text-sm text-ob-text font-mono focus:outline-none focus:border-ob-amber/50 transition-colors'
+const labelCls = 'block text-[10px] font-mono text-ob-dim uppercase tracking-[0.1em] mb-1.5'
+
+/* ── Editable shift card inside DaySheet ── */
 function ShiftCard({ shift: s, company, companies, getCompanyById, onDelete, onSave }) {
-  const [editing, setEditing] = useState(false)
-  const [form, setForm]       = useState({ companyId: s.companyId, startTime: s.startTime, endTime: s.endTime })
+  const [editing, setEditing]     = useState(false)
+  const [confirming, setConfirming] = useState(false)
+  const confirmTimer                = useRef(null)
+  const [form, setForm]           = useState({ companyId: s.companyId, startTime: s.startTime, endTime: s.endTime })
+
+  const handleDelete = () => {
+    if (confirming) {
+      clearTimeout(confirmTimer.current)
+      onDelete()
+    } else {
+      setConfirming(true)
+      confirmTimer.current = setTimeout(() => setConfirming(false), 2500)
+    }
+  }
 
   const previewHours = form.startTime && form.endTime ? calcHours(form.startTime, form.endTime) : null
   const previewPay   = previewHours !== null && form.companyId
@@ -50,74 +66,90 @@ function ShiftCard({ shift: s, company, companies, getCompanyById, onDelete, onS
 
   if (editing) {
     return (
-      <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 space-y-2">
-        <select value={form.companyId} onChange={e => setForm(f => ({ ...f, companyId: e.target.value }))}
-          className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+      <div className="bg-ob-bg border border-ob-border rounded-xl p-3 space-y-2.5">
+        <select
+          value={form.companyId}
+          onChange={e => setForm(f => ({ ...f, companyId: e.target.value }))}
+          className={inputCls}
+        >
           {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
         <div className="grid grid-cols-2 gap-2">
           <input type="time" value={form.startTime}
             onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))}
-            className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            className={inputCls} />
           <input type="time" value={form.endTime}
             onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))}
-            className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            className={inputCls} />
         </div>
         {previewHours !== null && (
-          <div className="text-xs text-center text-brand-600 font-medium">
-            {previewHours.toFixed(2)} hrs {previewPay !== null && `= ${formatCurrency(previewPay)}`}
+          <div className="px-3 py-2 bg-ob-amber/[0.06] border border-ob-amber/20 rounded-xl text-xs text-center font-mono text-ob-amber">
+            {previewHours.toFixed(2)} hrs{previewPay !== null && ` · ${formatCurrency(previewPay)}`}
           </div>
         )}
         <div className="flex gap-2">
-          <button onClick={handleSave}
-            className="flex-1 py-2 bg-brand-600 text-white text-xs font-semibold rounded-xl">Save</button>
-          <button onClick={() => setEditing(false)}
-            className="flex-1 py-2 border border-gray-200 text-gray-600 text-xs font-medium rounded-xl">Cancel</button>
+          <button
+            onClick={handleSave}
+            className="flex-1 py-2 bg-ob-amber/10 border border-ob-amber/30 hover:bg-ob-amber/20 text-ob-amber text-xs font-semibold rounded-xl transition-colors"
+          >
+            Save
+          </button>
+          <button
+            onClick={() => setEditing(false)}
+            className="flex-1 py-2 bg-ob-raised border border-ob-border text-ob-muted text-xs font-medium rounded-xl transition-colors"
+          >
+            Cancel
+          </button>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl px-4 py-3.5 flex items-center gap-3"
-      style={{ borderLeftWidth: 4, borderLeftColor: company?.color ?? '#9ca3af' }}>
+    <div
+      className="bg-ob-raised border border-ob-border rounded-xl px-4 py-3.5 flex items-center gap-3"
+      style={{ borderLeftWidth: 3, borderLeftColor: company?.color ?? '#4E4E60' }}
+    >
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between">
-          <p className="font-semibold text-gray-900 text-sm">{company?.name ?? '—'}</p>
-          <p className="font-semibold text-gray-900 text-sm">{formatCurrency(s.pay)}</p>
+          <p className="font-semibold text-ob-text text-sm">{company?.name ?? '—'}</p>
+          <p className="font-mono font-semibold text-ob-text text-sm tabular-nums">{formatCurrency(s.pay)}</p>
         </div>
         <div className="flex items-center justify-between mt-0.5">
-          <p className="text-xs text-gray-400">{s.startTime}–{s.endTime}</p>
-          <p className="text-xs text-gray-400">{s.hours.toFixed(2)}h</p>
+          <p className="text-[11px] font-mono text-ob-dim">{s.startTime}–{s.endTime}</p>
+          <p className="text-[11px] font-mono text-ob-dim">{s.hours.toFixed(2)}h</p>
         </div>
       </div>
-      <div className="flex gap-1 flex-shrink-0">
-        <button onClick={() => setEditing(true)}
-          className="p-2 text-gray-300 hover:text-brand-500 rounded-lg transition-colors">
+      <div className="flex gap-0.5 flex-shrink-0">
+        <button onClick={() => setEditing(true)} className="p-1.5 text-ob-dim hover:text-ob-amber rounded-lg transition-colors">
           <Pencil size={13} />
         </button>
-        <button onClick={onDelete}
-          className="p-2 text-gray-300 hover:text-red-500 rounded-lg transition-colors">
-          <Trash2 size={14} />
+        <button
+          onClick={handleDelete}
+          className={`transition-all rounded-lg ${
+            confirming
+              ? 'px-2 py-1 text-[10px] font-mono font-bold text-ob-red bg-ob-red/10 border border-ob-red/30'
+              : 'p-1.5 text-ob-dim hover:text-ob-red'
+          }`}
+        >
+          {confirming ? 'Sure?' : <Trash2 size={13} />}
         </button>
       </div>
     </div>
   )
 }
 
-/* ── Bottom sheet ── */
+/* ── Mobile bottom sheet ── */
 function DaySheet({ date, shifts, companies, getCompanyById, addShift, deleteShift, updateShift, onClose }) {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm]         = useState({ ...BLANK, companyId: companies[0]?.id ?? '' })
 
-  // Lock body scroll on iOS while sheet is open
   useEffect(() => {
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = prev }
   }, [])
 
-  // Reset form when sheet opens for a new date
   useEffect(() => {
     setShowForm(false)
     setForm({ ...BLANK, companyId: companies[0]?.id ?? '' })
@@ -142,94 +174,97 @@ function DaySheet({ date, shifts, companies, getCompanyById, addShift, deleteShi
     weekday: 'long', month: 'long', day: 'numeric',
   })
 
+  const totalPay = shifts.reduce((s, sh) => s + sh.pay, 0)
+
   return (
     <>
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/30 z-[60]"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 bg-ob-bg/70 backdrop-blur-sm z-[60]" onClick={onClose} />
 
       {/* Sheet */}
-      <div className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-2xl shadow-xl max-h-[80vh] flex flex-col">
+      <div className="fixed bottom-0 left-0 right-0 z-[70] bg-ob-surface border-t border-ob-border rounded-t-2xl shadow-2xl max-h-[82vh] flex flex-col">
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
-          <div className="w-10 h-1 bg-gray-200 rounded-full" />
+          <div className="w-8 h-[3px] bg-ob-border rounded-full" />
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 flex-shrink-0">
-          <p className="font-semibold text-gray-900 text-sm">{label}</p>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-ob-border flex-shrink-0">
+          <div>
+            <p className="text-[10px] font-mono text-ob-dim uppercase tracking-[0.1em]">Selected</p>
+            <p className="font-syne font-bold text-ob-text text-sm mt-0.5">{label}</p>
+          </div>
           <div className="flex items-center gap-2">
+            {shifts.length > 0 && (
+              <p className="text-sm font-mono font-semibold text-ob-amber tabular-nums">
+                {formatCurrency(totalPay)}
+              </p>
+            )}
             {companies.length > 0 && !showForm && (
               <button
                 onClick={() => setShowForm(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white text-xs font-semibold rounded-lg"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-ob-amber/10 border border-ob-amber/30 hover:bg-ob-amber/20 text-ob-amber text-xs font-semibold rounded-lg transition-colors"
               >
-                <Plus size={13} />
+                <Plus size={12} />
                 Log work
               </button>
             )}
-            <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg">
-              <X size={18} />
+            <button onClick={onClose} className="p-1.5 text-ob-dim hover:text-ob-text rounded-lg transition-colors">
+              <X size={17} />
             </button>
           </div>
         </div>
 
-        {/* Scrollable body */}
+        {/* Body */}
         <div
-          className="flex-1 overflow-y-auto px-4 py-3 space-y-3"
+          className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5"
           style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
         >
-
-          {/* Log form */}
+          {/* Add form */}
           {showForm && (
-            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+            <div className="bg-ob-bg border border-ob-border rounded-xl p-4">
               <form onSubmit={handleSubmit} className="flex flex-col gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1.5">Client</label>
+                  <label className={labelCls}>Client</label>
                   <select
                     value={form.companyId}
                     onChange={e => setForm(f => ({ ...f, companyId: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    className={inputCls}
                     required
                   >
                     <option value="" disabled>Select…</option>
                     {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
-
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2.5">
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1.5">Start</label>
+                    <label className={labelCls}>Start</label>
                     <input type="time" value={form.startTime}
                       onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                      required />
+                      className={inputCls} required />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1.5">End</label>
+                    <label className={labelCls}>End</label>
                     <input type="time" value={form.endTime}
                       onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                      required />
+                      className={inputCls} required />
                   </div>
                 </div>
-
                 {previewHours !== null && (
-                  <div className="px-3 py-2 bg-brand-50 border border-brand-100 rounded-xl text-sm text-center">
-                    <span className="text-brand-700 font-semibold">{previewHours.toFixed(2)} hrs</span>
-                    {previewPay !== null && <span className="text-brand-500 ml-2">= {formatCurrency(previewPay)}</span>}
+                  <div className="flex items-center justify-between px-3 py-2.5 bg-ob-amber/[0.06] border border-ob-amber/20 rounded-xl">
+                    <p className="text-sm font-syne font-bold text-ob-text tabular-nums">{previewHours.toFixed(2)} hrs</p>
+                    {previewPay !== null && (
+                      <p className="text-sm font-syne font-bold text-ob-amber tabular-nums">{formatCurrency(previewPay)}</p>
+                    )}
                   </div>
                 )}
-
                 <div className="flex gap-2">
                   <button type="submit"
-                    className="flex-1 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl">
+                    className="flex-1 py-2.5 bg-ob-amber/10 border border-ob-amber/30 hover:bg-ob-amber/20 text-ob-amber text-sm font-semibold rounded-xl transition-colors">
                     Save
                   </button>
                   <button type="button" onClick={() => setShowForm(false)}
-                    className="flex-1 py-2.5 text-gray-600 text-sm font-medium rounded-xl border border-gray-200">
+                    className="flex-1 py-2.5 bg-ob-raised border border-ob-border text-ob-muted text-sm font-medium rounded-xl transition-colors">
                     Cancel
                   </button>
                 </div>
@@ -237,13 +272,15 @@ function DaySheet({ date, shifts, companies, getCompanyById, addShift, deleteShi
             </div>
           )}
 
-          {/* Shift list */}
+          {/* Empty state */}
           {shifts.length === 0 && !showForm && (
-            <div className="py-8 text-center text-gray-400 text-sm">
-              No shifts — tap <span className="font-medium text-brand-500">Log work</span> to add one
+            <div className="py-10 text-center">
+              <p className="text-ob-dim text-sm font-mono">No shifts on this day</p>
+              <p className="text-ob-dim/50 text-xs font-mono mt-1">Tap Log work to add one</p>
             </div>
           )}
 
+          {/* Shift cards */}
           {shifts.map(s => (
             <ShiftCard
               key={s.id}
@@ -256,7 +293,6 @@ function DaySheet({ date, shifts, companies, getCompanyById, addShift, deleteShi
             />
           ))}
 
-          {/* Bottom padding so content clears the nav bar + safe area */}
           <div className="h-20" />
         </div>
       </div>
@@ -267,25 +303,28 @@ function DaySheet({ date, shifts, companies, getCompanyById, addShift, deleteShi
 /* ── Mobile calendar grid ── */
 function MobileCalendar() {
   const { shifts, addShift, deleteShift, updateShift } = useShiftStore()
-  const { companies, getCompanyById }     = useCompanyStore()
+  const { companies, getCompanyById }                  = useCompanyStore()
 
-  const today = new Date()
-  const [year,     setYear]     = useState(today.getFullYear())
-  const [month,    setMonth]    = useState(today.getMonth())
+  const now   = new Date()
+  const [year,     setYear]     = useState(now.getFullYear())
+  const [month,    setMonth]    = useState(now.getMonth())
   const [selected, setSelected] = useState(null)
 
   const cells = useMemo(() => buildGrid(year, month), [year, month])
 
-  const shiftsByDate = useMemo(() => {
-    const map = {}
+  const { shiftsByDate, earningsByDate, maxMonthEarnings } = useMemo(() => {
+    const byDate    = {}
+    const earnings  = {}
     shifts.forEach(s => {
-      if (!map[s.date]) map[s.date] = []
-      map[s.date].push(s)
+      if (!byDate[s.date])   byDate[s.date] = []
+      byDate[s.date].push(s)
+      earnings[s.date] = (earnings[s.date] ?? 0) + s.pay
     })
-    return map
+    const max = Math.max(...Object.values(earnings), 1)
+    return { shiftsByDate: byDate, earningsByDate: earnings, maxMonthEarnings: max }
   }, [shifts])
 
-  const todayStr = toDateStr(today.getFullYear(), today.getMonth(), today.getDate())
+  const todayStr = toDateStr(now.getFullYear(), now.getMonth(), now.getDate())
 
   const prevMonth = () => {
     setSelected(null)
@@ -295,66 +334,106 @@ function MobileCalendar() {
     setSelected(null)
     if (month === 11) { setMonth(0); setYear(y => y + 1) } else setMonth(m => m + 1)
   }
+  const goToday = () => {
+    setSelected(null)
+    setYear(now.getFullYear())
+    setMonth(now.getMonth())
+  }
 
-  const monthLabel = new Date(year, month, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  const monthLabel = new Date(year, month, 1)
+    .toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    .toUpperCase()
+
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth()
 
   return (
     <div>
       {/* Month nav */}
       <div className="flex items-center justify-between mb-3">
-        <button onClick={prevMonth} className="p-2 rounded-xl text-gray-500 hover:bg-gray-100 active:bg-gray-200">
-          <ChevronLeft size={20} />
+        <button onClick={prevMonth} className="p-2 rounded-xl text-ob-dim hover:text-ob-text hover:bg-ob-raised transition-colors">
+          <ChevronLeft size={18} />
         </button>
-        <h3 className="text-base font-semibold text-gray-900">{monthLabel}</h3>
-        <button onClick={nextMonth} className="p-2 rounded-xl text-gray-500 hover:bg-gray-100 active:bg-gray-200">
-          <ChevronRight size={20} />
+        <div className="flex items-center gap-3">
+          <p className="text-sm font-mono font-semibold text-ob-text tracking-wide">{monthLabel}</p>
+          {!isCurrentMonth && (
+            <button
+              onClick={goToday}
+              className="text-[10px] font-mono text-ob-amber hover:text-ob-amber/70 border border-ob-amber/30 px-2 py-0.5 rounded-md transition-colors"
+            >
+              Today
+            </button>
+          )}
+        </div>
+        <button onClick={nextMonth} className="p-2 rounded-xl text-ob-dim hover:text-ob-text hover:bg-ob-raised transition-colors">
+          <ChevronRight size={18} />
         </button>
       </div>
 
-      {/* Grid */}
-      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+      {/* Calendar grid */}
+      <div className="bg-ob-surface border border-ob-border rounded-2xl overflow-hidden">
         {/* Weekday headers */}
-        <div className="grid grid-cols-7 border-b border-gray-100">
+        <div className="grid grid-cols-7 border-b border-ob-border">
           {WEEKDAYS.map(d => (
-            <div key={d} className="py-2 text-center text-xs font-semibold text-gray-400">{d}</div>
+            <div key={d} className="py-2 text-center text-[10px] font-mono font-semibold text-ob-dim uppercase tracking-wider">
+              {d}
+            </div>
           ))}
         </div>
 
-        {/* Day cells — fixed height h-12 so tap targets are always rendered */}
+        {/* Day cells */}
         <div className="grid grid-cols-7">
           {cells.map((day, idx) => {
-            if (!day) return <div key={`e-${idx}`} className="h-12" />
+            if (!day) return <div key={`e-${idx}`} className="h-14 border-b border-r border-ob-border/30 last:border-r-0" />
 
             const dateStr   = toDateStr(year, month, day)
             const dayShifts = shiftsByDate[dateStr] ?? []
+            const dayPay    = earningsByDate[dateStr] ?? 0
             const isToday   = dateStr === todayStr
             const isSel     = dateStr === selected
-            const dotColors = dayShifts.slice(0, 3).map(s => getCompanyById(s.companyId)?.color ?? '#9ca3af')
+            const dotColors = dayShifts.slice(0, 3).map(s => getCompanyById(s.companyId)?.color ?? '#4E4E60')
+
+            // Heat-map: amber intensity based on relative earnings this month
+            const heatOpacity = dayPay > 0 && !isSel
+              ? Math.min(0.05 + (dayPay / maxMonthEarnings) * 0.25, 0.30)
+              : 0
+
+            const row  = Math.floor(idx / 7)
+            const col  = idx % 7
+            const totalRows = Math.ceil(cells.length / 7) - 1
 
             return (
               <button
                 key={dateStr}
-                onClick={() => setSelected(dateStr)}
-                className={[
-                  'h-12 w-full flex flex-col items-center justify-center gap-0.5',
-                  isSel               ? 'bg-brand-600'  : '',
-                  isToday && !isSel   ? 'bg-brand-50'   : '',
-                  !isSel && !isToday  ? 'active:bg-gray-100' : '',
-                ].join(' ')}
+                onClick={() => setSelected(isSel ? null : dateStr)}
+                className={`relative h-14 w-full flex flex-col items-center justify-center gap-0.5 transition-colors
+                  ${row < totalRows ? 'border-b border-ob-border/30' : ''}
+                  ${col < 6 ? 'border-r border-ob-border/30' : ''}
+                  ${isSel ? 'bg-ob-amber/20' : 'hover:bg-ob-raised'}
+                `}
+                style={heatOpacity > 0 ? { backgroundColor: `rgba(232,160,32,${heatOpacity})` } : {}}
               >
-                <span className={[
-                  'text-sm font-medium leading-none',
-                  isSel             ? 'text-white'            : '',
-                  isToday && !isSel ? 'text-brand-600 font-bold' : '',
-                  !isSel && !isToday ? 'text-gray-800'        : '',
-                ].join(' ')}>
+                {/* Today ring */}
+                {isToday && !isSel && (
+                  <div className="absolute inset-[6px] rounded-full ring-1 ring-ob-amber/50 pointer-events-none" />
+                )}
+
+                <span className={`text-sm font-mono font-medium leading-none z-10 ${
+                  isSel             ? 'text-ob-amber font-bold'  :
+                  isToday           ? 'text-ob-amber'            :
+                  dayShifts.length  ? 'text-ob-text'             :
+                                      'text-ob-muted'
+                }`}>
                   {day}
                 </span>
+
                 {dotColors.length > 0 && (
-                  <div className="flex gap-0.5">
+                  <div className="flex gap-[3px] z-10">
                     {dotColors.map((color, i) => (
-                      <div key={i} className="w-1.5 h-1.5 rounded-full"
-                        style={{ backgroundColor: isSel ? 'rgba(255,255,255,0.75)' : color }} />
+                      <div
+                        key={i}
+                        className="w-1 h-1 rounded-full"
+                        style={{ backgroundColor: isSel ? 'rgba(232,160,32,0.7)' : color }}
+                      />
                     ))}
                   </div>
                 )}
@@ -364,7 +443,7 @@ function MobileCalendar() {
         </div>
       </div>
 
-      {/* Bottom sheet */}
+      {/* Day detail sheet */}
       {selected && (
         <DaySheet
           date={selected}
@@ -381,8 +460,7 @@ function MobileCalendar() {
   )
 }
 
-/* ── Desktop log/edit modal ── */
-// shift = existing shift object when editing, null when logging new
+/* ── Desktop log / edit modal ── */
 function DesktopLogModal({ date, shift, onClose }) {
   const { addShift, updateShift }     = useShiftStore()
   const { companies, getCompanyById } = useCompanyStore()
@@ -422,82 +500,117 @@ function DesktopLogModal({ date, shift, onClose }) {
     onClose()
   }
 
-  const label = (shift
-    ? new Date(shift.date + 'T00:00:00')
-    : date
-  ).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+  const label = (shift ? new Date(shift.date + 'T00:00:00') : date)
+    .toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
+      <div className="absolute inset-0 bg-ob-bg/70 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-        <div className="flex items-center justify-between mb-5">
+      <div className="relative bg-ob-surface border border-ob-border rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+        {/* Modal header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-ob-border">
           <div>
-            <h3 className="text-base font-semibold text-gray-900">{shift ? 'Edit shift' : 'Log work'}</h3>
-            <p className="text-xs text-gray-400 mt-0.5">{label}</p>
+            <p className="text-[10px] font-mono text-ob-amber uppercase tracking-[0.15em]">
+              {shift ? 'Edit shift' : 'Log work'}
+            </p>
+            <h3 className="font-syne font-bold text-ob-text text-lg mt-0.5">{label}</h3>
           </div>
-          <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg">
-            <X size={18} />
+          <button onClick={onClose} className="p-2 text-ob-dim hover:text-ob-text hover:bg-ob-raised rounded-xl transition-colors">
+            <X size={17} />
           </button>
         </div>
 
-        {companies.length === 0 ? (
-          <p className="text-sm text-gray-500 text-center py-4">Add a client first before logging shifts.</p>
-        ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1.5">Client</label>
-              <select
-                value={form.companyId}
-                onChange={e => setForm(f => ({ ...f, companyId: e.target.value }))}
-                className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
-                required
-              >
-                <option value="" disabled>Select…</option>
-                {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
+        {/* Modal body */}
+        <div className="px-6 py-5">
+          {companies.length === 0 ? (
+            <p className="text-sm text-ob-muted font-mono text-center py-4">Add a client first.</p>
+          ) : (
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1.5">Start</label>
-                <input type="time" value={form.startTime}
-                  onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  required />
+                <label className={labelCls}>Client</label>
+                <div className="relative">
+                  <select
+                    value={form.companyId}
+                    onChange={e => setForm(f => ({ ...f, companyId: e.target.value }))}
+                    className="w-full appearance-none bg-ob-raised border border-ob-border rounded-xl px-4 py-3 text-sm text-ob-text font-medium focus:outline-none focus:border-ob-amber/50 transition-colors"
+                    required
+                  >
+                    <option value="" disabled>Select…</option>
+                    {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1.5">End</label>
-                <input type="time" value={form.endTime}
-                  onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  required />
-              </div>
-            </div>
 
-            {previewHours !== null && (
-              <div className="px-4 py-2.5 bg-brand-50 border border-brand-100 rounded-xl text-sm text-center">
-                <span className="text-brand-700 font-semibold">{previewHours.toFixed(2)} hrs</span>
-                {previewPay !== null && <span className="text-brand-500 ml-2">= {formatCurrency(previewPay)}</span>}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>Start</label>
+                  <input type="time" value={form.startTime}
+                    onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))}
+                    className={inputCls} required />
+                </div>
+                <div>
+                  <label className={labelCls}>End</label>
+                  <input type="time" value={form.endTime}
+                    onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))}
+                    className={inputCls} required />
+                </div>
               </div>
-            )}
 
-            <div className="flex gap-2 pt-1">
-              <button type="submit"
-                className="flex-1 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors">
-                {shift ? 'Save changes' : 'Save shift'}
-              </button>
-              <button type="button" onClick={onClose}
-                className="flex-1 py-2.5 text-gray-600 text-sm font-medium rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors">
-                Cancel
-              </button>
-            </div>
-          </form>
-        )}
+              {previewHours !== null && (
+                <div className="flex items-center justify-between px-4 py-3 bg-ob-bg border border-ob-border rounded-xl">
+                  <div>
+                    <p className="text-[10px] font-mono text-ob-dim uppercase tracking-[0.1em] mb-1">Duration</p>
+                    <p className="text-xl font-syne font-bold text-ob-text tabular-nums">{previewHours.toFixed(2)} hrs</p>
+                  </div>
+                  {previewPay !== null && (
+                    <div className="text-right">
+                      <p className="text-[10px] font-mono text-ob-dim uppercase tracking-[0.1em] mb-1">Earnings</p>
+                      <p className="text-xl font-syne font-bold text-ob-amber tabular-nums">{formatCurrency(previewPay)}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-1">
+                <button type="submit"
+                  className="flex-1 py-3 bg-ob-amber/10 border border-ob-amber/30 hover:bg-ob-amber/20 text-ob-amber text-sm font-semibold rounded-xl transition-colors">
+                  {shift ? 'Save changes' : 'Save shift'}
+                </button>
+                <button type="button" onClick={onClose}
+                  className="flex-1 py-3 bg-ob-raised border border-ob-border hover:border-ob-dim text-ob-muted hover:text-ob-text text-sm font-medium rounded-xl transition-colors">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
       </div>
+    </div>
+  )
+}
+
+/* ── Custom compact event pill for month view ── */
+function CalendarEvent({ event }) {
+  const color = event.resource.color
+  const paid  = event.resource.paid
+  return (
+    <div
+      className="flex items-center gap-1 w-full overflow-hidden group/ev"
+      style={{ opacity: paid ? 1 : 0.6 }}
+    >
+      {/* Colored dot */}
+      <div
+        className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+        style={{ backgroundColor: color }}
+      />
+      {/* Label */}
+      <span
+        className="text-[10px] font-mono truncate leading-none"
+        style={{ color: 'var(--ob-muted)' }}
+      >
+        {event.title}
+      </span>
     </div>
   )
 }
@@ -506,8 +619,8 @@ function DesktopLogModal({ date, shift, onClose }) {
 export default function CalendarPage() {
   const { shifts }         = useShiftStore()
   const { getCompanyById } = useCompanyStore()
-  const [modalDate, setModalDate]   = useState(null)
-  const [editShift, setEditShift]   = useState(null)  // shift object being edited
+  const [modalDate,  setModalDate]  = useState(null)
+  const [editShift,  setEditShift]  = useState(null)
 
   const events = shifts.flatMap(s => {
     const company  = getCompanyById(s.companyId)
@@ -517,37 +630,38 @@ export default function CalendarPage() {
     const start    = new Date(base); start.setHours(sh, sm, 0, 0)
     const end      = new Date(base); end.setHours(eh, em, 0, 0)
 
-    const meta = { color: company?.color ?? '#6b7280', paid: s.paid }
+    const meta  = { color: company?.color ?? '#4E4E60', paid: s.paid }
     const title = `${company?.name ?? '?'} · ${formatCurrency(s.pay)}`
 
-    // Overnight shift — split into two timed events so they stay in the time grid
     if (end <= start) {
       const midnight    = new Date(base); midnight.setHours(23, 59, 59, 999)
       const nextMorning = new Date(base); nextMorning.setDate(nextMorning.getDate() + 1); nextMorning.setHours(0, 0, 0, 0)
-      const nextEnd     = new Date(base); nextEnd.setDate(nextEnd.getDate() + 1);         nextEnd.setHours(eh, em, 0, 0)
+      const nextEnd     = new Date(base); nextEnd.setDate(nextEnd.getDate() + 1); nextEnd.setHours(eh, em, 0, 0)
       return [
-        { id: s.id + '-a', title,                                  start, end: midnight,         resource: meta },
+        { id: s.id + '-a', title,                                    start, end: midnight,           resource: meta },
         { id: s.id + '-b', title: `${company?.name ?? '?'} (cont.)`, start: nextMorning, end: nextEnd, resource: meta },
       ]
     }
-
     return [{ id: s.id, title, start, end, resource: meta }]
   })
 
+  // Month view: transparent container — CalendarEvent handles all styling
+  // Week view: keep colored block (rbc-time-view CSS override keeps it styled)
   const eventPropGetter = (event) => ({
     style: {
       backgroundColor: event.resource.color,
-      border: 'none', borderRadius: '5px',
-      color: '#fff', fontSize: '12px', padding: '2px 6px',
-      opacity: event.resource.paid ? 1 : 0.75,
+      border:          'none',
+      borderRadius:    '3px',
+      opacity:         event.resource.paid ? 1 : 0.7,
     },
   })
 
   return (
     <div>
-      <div className="mb-4">
-        <h2 className="text-xl font-bold text-gray-900">Calendar</h2>
-        <p className="text-sm text-gray-500 mt-0.5">Your shifts at a glance</p>
+      {/* Page header */}
+      <div className="mb-5">
+        <p className="text-[10px] font-mono text-ob-amber uppercase tracking-[0.18em] mb-1">Overview</p>
+        <h1 className="text-2xl font-syne font-bold text-ob-text">Calendar</h1>
       </div>
 
       {/* Mobile */}
@@ -556,13 +670,20 @@ export default function CalendarPage() {
       </div>
 
       {/* Desktop */}
-      <div className="hidden md:block bg-white border border-gray-200 rounded-xl p-5 shadow-sm" style={{ height: 620 }}>
+      <div
+        className="hidden md:block bg-ob-surface border border-ob-border rounded-2xl overflow-hidden"
+        style={{ height: 640 }}
+      >
         <Calendar
-          localizer={localizer} events={events}
-          startAccessor="start" endAccessor="end"
+          localizer={localizer}
+          events={events}
+          startAccessor="start"
+          endAccessor="end"
           eventPropGetter={eventPropGetter}
-          views={['month', 'week']} defaultView="month"
-          style={{ height: '100%' }}
+          components={{ event: CalendarEvent }}
+          views={['month', 'week']}
+          defaultView="month"
+          style={{ height: '100%', padding: '16px' }}
           selectable
           onSelectSlot={({ start }) => { setEditShift(null); setModalDate(start) }}
           onSelectEvent={event => {
@@ -572,12 +693,10 @@ export default function CalendarPage() {
         />
       </div>
 
-      {/* Desktop log modal (new shift) */}
+      {/* Desktop modals */}
       {modalDate && !editShift && (
         <DesktopLogModal date={modalDate} shift={null} onClose={() => setModalDate(null)} />
       )}
-
-      {/* Desktop edit modal (existing shift) */}
       {editShift && (
         <DesktopLogModal date={null} shift={editShift} onClose={() => setEditShift(null)} />
       )}
