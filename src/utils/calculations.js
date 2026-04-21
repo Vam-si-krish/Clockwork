@@ -1,5 +1,20 @@
 import { parseISO, startOfWeek, startOfMonth, isWithinInterval, endOfWeek, endOfMonth } from 'date-fns'
 
+export const EXPENSE_CATEGORIES = [
+  { id: 'food',          label: 'Food',        color: '#F97316' },
+  { id: 'transport',     label: 'Transport',   color: '#3B82F6' },
+  { id: 'bills',         label: 'Bills',       color: '#8B5CF6' },
+  { id: 'shopping',      label: 'Shopping',    color: '#EC4899' },
+  { id: 'entertainment', label: 'Fun',         color: '#14B8A6' },
+  { id: 'health',        label: 'Health',      color: '#4ADE80' },
+  { id: 'education',     label: 'Education',   color: '#FBBF24' },
+  { id: 'other',         label: 'Other',       color: '#6B7280' },
+]
+
+export function getCategoryMeta(id) {
+  return EXPENSE_CATEGORIES.find((c) => c.id === id) ?? EXPENSE_CATEGORIES[EXPENSE_CATEGORIES.length - 1]
+}
+
 /**
  * Calculate hours worked from start/end time strings (HH:mm) on a given date.
  */
@@ -115,6 +130,30 @@ export function getPeriodBounds(payCycle, now = new Date(), offset = 0) {
   }
 
   return null
+}
+
+export function expensesThisWeek(expenses, now = new Date()) {
+  const start = startOfWeek(now, { weekStartsOn: 1 })
+  const end   = endOfWeek(now,   { weekStartsOn: 1 })
+  return expenses.filter((e) => isWithinInterval(parseISO(e.date), { start, end }))
+}
+
+export function expensesThisMonth(expenses, now = new Date()) {
+  const start = startOfMonth(now)
+  const end   = endOfMonth(now)
+  return expenses.filter((e) => isWithinInterval(parseISO(e.date), { start, end }))
+}
+
+export function totalSpent(expenses) {
+  return expenses.reduce((sum, e) => sum + e.amount, 0)
+}
+
+export function groupByCategory(expenses) {
+  return expenses.reduce((acc, e) => {
+    if (!acc[e.category]) acc[e.category] = []
+    acc[e.category].push(e)
+    return acc
+  }, {})
 }
 
 /**

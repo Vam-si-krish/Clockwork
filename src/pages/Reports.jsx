@@ -1,9 +1,12 @@
 import { Download } from 'lucide-react'
 import useShiftStore from '../store/useShiftStore'
 import useCompanyStore from '../store/useCompanyStore'
+import useExpenseStore from '../store/useExpenseStore'
 import {
   groupByCompany, totalEarnings, formatCurrency,
   getPeriodBounds, shiftsInPeriod,
+  expensesThisMonth, shiftsThisMonth, totalSpent,
+  groupByCategory, EXPENSE_CATEGORIES,
 } from '../utils/calculations'
 import { CheckCircle2, Circle, CheckCheck } from 'lucide-react'
 
@@ -96,6 +99,7 @@ function PeriodRow({ label, bounds, shifts, onMarkAllPaid, isFirst }) {
 export default function Reports() {
   const { shifts, markPaid, markManyPaid } = useShiftStore()
   const { companies, getCompanyById }      = useCompanyStore()
+  const { expenses }                       = useExpenseStore()
 
   const grouped    = groupByCompany(shifts)
   const togglePaid = (shift) => markPaid(shift.id, !shift.paid)
@@ -144,6 +148,24 @@ export default function Reports() {
   const allPaid    = totalEarnings(shifts.filter(s => s.paid))
   const allUnpaid  = totalEarnings(shifts.filter(s => !s.paid))
   const paidPct    = allEarned > 0 ? (allPaid / allEarned) * 100 : 0
+
+  // Expense calculations
+  const monthShiftsData = shiftsThisMonth(shifts)
+  const monthEarnings   = totalEarnings(monthShiftsData)
+  const monthExpenses   = expensesThisMonth(expenses)
+  const monthSpent      = totalSpent(monthExpenses)
+  const netThisMonth    = monthEarnings - monthSpent
+
+  const allTimeSpent    = totalSpent(expenses)
+  const catGroups       = groupByCategory(expenses)
+  const catBreakdown    = EXPENSE_CATEGORIES
+    .map((cat) => ({
+      cat,
+      total: (catGroups[cat.id] ?? []).reduce((s, e) => s + e.amount, 0),
+    }))
+    .filter((c) => c.total > 0)
+    .sort((a, b) => b.total - a.total)
+    .map((c) => ({ ...c, pct: allTimeSpent > 0 ? (c.total / allTimeSpent) * 100 : 0 }))
 
   return (
     <div className="max-w-3xl">
@@ -326,6 +348,91 @@ export default function Reports() {
             </div>
           )
         })}
+      </div>
+
+      {/* ── Spending section ── */}
+      <div className="mt-8">
+        <div className="mb-4">
+          <p className="text-[10px] font-mono text-ob-red uppercase tracking-[0.18em] mb-1">Spending</p>
+          <h2 className="text-xl font-syne font-bold text-ob-text">Expenses</h2>
+        </div>
+
+        {expenses.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 bg-ob-surface border border-ob-border rounded-2xl">
+            <p className="text-ob-muted font-medium text-sm">No expenses logged yet</p>
+            <p className="text-ob-dim text-xs mt-1 font-mono">Track spending from the Expenses page</p>
+          </div>
+        ) : (
+          <>
+            {/* Income vs Spending this month */}
+            <div className="bg-ob-surface border border-ob-border rounded-2xl p-5 mb-4">
+              <p className="text-[10px] font-mono text-ob-dim uppercase tracking-[0.12em] mb-4">
+                This month · Income vs Spending
+              </p>
+              <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
+                <div>
+                  <p className="text-[10px] font-mono text-ob-green uppercase tracking-[0.1em] mb-1">Earned</p>
+                  <p className="text-2xl font-syne font-bold text-ob-text tabular-nums">
+                    {formatCurrency(monthEarnings)}
+                  </p>
+                </div>
+                <div className="text-ob-border text-2xl font-light pb-0.5">−</div>
+                <div>
+                  <p className="text-[10px] font-mono text-ob-red uppercase tracking-[0.1em] mb-1">Spent</p>
+                  <p className="text-2xl font-syne font-bold text-ob-text tabular-nums">
+                    {formatCurrency(monthSpent)}
+                  </p>
+                </div>
+                <div className="text-ob-border text-2xl font-light pb-0.5">=</div>
+                <div>
+                  <p className="text-[10px] font-mono text-ob-muted uppercase tracking-[0.1em] mb-1">Net</p>
+                  <p className={`text-2xl font-syne font-bold tabular-nums ${
+                    netThisMonth >= 0 ? 'text-ob-green' : 'text-ob-red'
+                  }`}>
+                    {netThisMonth >= 0 ? '+' : ''}{formatCurrency(netThisMonth)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* All-time spending by category */}
+            {catBreakdown.length > 0 && (
+              <div className="bg-ob-surface border border-ob-border rounded-2xl overflow-hidden">
+                <div className="px-5 py-4 border-b border-ob-border">
+                  <p className="text-[10px] font-mono text-ob-dim uppercase tracking-[0.1em] mb-0.5">
+                    By category
+                  </p>
+                  <p className="text-xs font-mono text-ob-muted">All time · {formatCurrency(allTimeSpent)} total</p>
+                </div>
+                {catBreakdown.map(({ cat, total, pct }) => (
+                  <div
+                    key={cat.id}
+                    className="px-5 py-3.5 border-b border-ob-border/40 last:border-0"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
+                        <span className="text-sm text-ob-text">{cat.label}</span>
+                      </div>
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        <span className="text-[10px] font-mono text-ob-dim tabular-nums">{pct.toFixed(0)}%</span>
+                        <span className="text-sm font-mono font-semibold text-ob-text tabular-nums">
+                          {formatCurrency(total)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="h-1 bg-ob-raised rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${pct}%`, backgroundColor: cat.color }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   )

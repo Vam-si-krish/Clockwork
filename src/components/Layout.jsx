@@ -7,17 +7,20 @@ import {
   Building2,
   ListTodo,
   BarChart2,
+  Wallet,
   LogOut,
 } from 'lucide-react'
 import useCompanyStore from '../store/useCompanyStore'
 import useShiftStore from '../store/useShiftStore'
 import useToDoStore from '../store/useTodoStore'
+import useExpenseStore from '../store/useExpenseStore'
 import useAuthStore from '../store/useAuthStore'
 import Logo from './Logo'
 
 const navItems = [
   { to: '/',          label: 'Home',     icon: LayoutDashboard, end: true },
   { to: '/shifts',    label: 'Shifts',   icon: Clock },
+  { to: '/expenses',  label: 'Expenses', icon: Wallet },
   { to: '/calendar',  label: 'Calendar', icon: CalendarDays },
   { to: '/companies', label: 'Clients',  icon: Building2 },
   { to: '/todos',     label: 'Todos',    icon: ListTodo },
@@ -28,12 +31,14 @@ export default function Layout() {
   const fetchCompanies = useCompanyStore((s) => s.fetchCompanies)
   const fetchShifts    = useShiftStore((s) => s.fetchShifts)
   const fetchTodos     = useToDoStore((s) => s.fetchTodos)
+  const fetchExpenses  = useExpenseStore((s) => s.fetchExpenses)
   const { user, signOut } = useAuthStore()
 
   useEffect(() => {
     fetchCompanies()
     fetchShifts()
     fetchTodos()
+    fetchExpenses()
   }, [])
 
   const email = user?.email ?? ''

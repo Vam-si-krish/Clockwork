@@ -9,6 +9,7 @@ import CalendarPage from './pages/CalendarPage'
 import Companies from './pages/Companies'
 import Todos from './pages/Todos'
 import Reports from './pages/Reports'
+import Expenses from './pages/Expenses'
 
 function LoadingScreen() {
   return (
@@ -73,6 +74,7 @@ export default function App() {
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="companies" element={<Companies />} />
             <Route path="todos"    element={<Todos />} />
+            <Route path="expenses" element={<Expenses />} />
             <Route path="reports"  element={<Reports />} />
             <Route path="*"        element={<Navigate to="/" replace />} />
           </Route>

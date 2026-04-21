@@ -3,7 +3,11 @@ import { ArrowUpRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import useShiftStore from '../store/useShiftStore'
 import useCompanyStore from '../store/useCompanyStore'
-import { shiftsThisWeek, shiftsThisMonth, totalEarnings, formatCurrency } from '../utils/calculations'
+import useExpenseStore from '../store/useExpenseStore'
+import {
+  shiftsThisWeek, shiftsThisMonth, totalEarnings, formatCurrency,
+  expensesThisMonth, totalSpent, getCategoryMeta,
+} from '../utils/calculations'
 
 function StatCard({ label, value, sub, highlight = false }) {
   return (
@@ -34,6 +38,7 @@ function StatCard({ label, value, sub, highlight = false }) {
 export default function Dashboard() {
   const { shifts }               = useShiftStore()
   const { companies, getCompanyById } = useCompanyStore()
+  const { expenses }             = useExpenseStore()
 
   const weekShifts   = shiftsThisWeek(shifts)
   const monthShifts  = shiftsThisMonth(shifts)
@@ -44,11 +49,22 @@ export default function Dashboard() {
   const unpaidShifts  = shifts.filter(s => !s.paid)
   const unpaidTotal   = totalEarnings(unpaidShifts)
 
+  const monthExpenses = expensesThisMonth(expenses)
+  const monthSpent    = totalSpent(monthExpenses)
+  const netThisMonth  = monthEarnings - monthSpent
+
   const recentShifts = useMemo(() =>
     [...shifts]
       .sort((a, b) => new Date(b.date) - new Date(a.date))
       .slice(0, 6),
     [shifts]
+  )
+
+  const recentExpenses = useMemo(() =>
+    [...expenses]
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 5),
+    [expenses]
   )
 
   const today    = new Date()
@@ -126,6 +142,36 @@ export default function Dashboard() {
           value={weekShifts.length}
           sub={weekShifts.length === 1 ? '1 session logged' : `${weekShifts.length} sessions`}
         />
+        <div
+          className="rounded-xl border p-4 transition-colors bg-ob-surface border-ob-border"
+        >
+          <p className="text-[10px] font-mono text-ob-dim uppercase tracking-[0.12em] mb-2.5">
+            Spent this month
+          </p>
+          <p className="text-xl font-mono font-semibold tabular-nums leading-none text-ob-red">
+            {formatCurrency(monthSpent)}
+          </p>
+          <p className="text-xs text-ob-dim mt-1.5">
+            {monthExpenses.length} expense{monthExpenses.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+        <div
+          className={`rounded-xl border p-4 transition-colors ${
+            netThisMonth >= 0
+              ? 'bg-ob-green/[0.04] border-ob-green/20'
+              : 'bg-ob-red/[0.04] border-ob-red/20'
+          }`}
+        >
+          <p className="text-[10px] font-mono text-ob-dim uppercase tracking-[0.12em] mb-2.5">
+            Net this month
+          </p>
+          <p className={`text-xl font-mono font-semibold tabular-nums leading-none ${
+            netThisMonth >= 0 ? 'text-ob-green' : 'text-ob-red'
+          }`}>
+            {netThisMonth >= 0 ? '+' : ''}{formatCurrency(netThisMonth)}
+          </p>
+          <p className="text-xs text-ob-dim mt-1.5">earned − spent</p>
+        </div>
       </div>
 
       {/* ── Recent shifts ── */}
@@ -190,6 +236,53 @@ export default function Dashboard() {
           >
             Log your first shift <ArrowUpRight size={11} />
           </Link>
+        </div>
+      )}
+
+      {/* ── Recent expenses ── */}
+      {recentExpenses.length > 0 && (
+        <div className="bg-ob-surface border border-ob-border rounded-2xl overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-ob-border">
+            <p className="text-[10px] font-mono text-ob-dim uppercase tracking-[0.12em]">
+              Recent expenses
+            </p>
+            <Link
+              to="/expenses"
+              className="flex items-center gap-1 text-[10px] font-mono text-ob-red hover:text-ob-red/70 transition-colors"
+            >
+              View all <ArrowUpRight size={10} />
+            </Link>
+          </div>
+
+          {recentExpenses.map((expense, i) => {
+            const cat = getCategoryMeta(expense.category)
+            return (
+              <div
+                key={expense.id}
+                className={`flex items-center justify-between px-4 py-3 hover:bg-ob-raised/50 transition-colors ${
+                  i < recentExpenses.length - 1 ? 'border-b border-ob-border/40' : ''
+                }`}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div
+                    className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: cat.color }}
+                  />
+                  <div className="min-w-0">
+                    <p className="text-sm text-ob-text font-medium truncate">
+                      {expense.merchant || cat.label}
+                    </p>
+                    <p className="text-[11px] font-mono text-ob-dim mt-0.5">
+                      {expense.date} · {cat.label}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-sm font-mono text-ob-red tabular-nums flex-shrink-0 ml-3">
+                  -{formatCurrency(expense.amount)}
+                </p>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
