@@ -46,13 +46,15 @@ function ExpenseModal({ expense, onClose, onSave }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
+    <div className="fixed inset-0 z-[70] flex items-end md:items-center justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
       <div
-        className="relative w-full md:max-w-md bg-ob-surface border border-ob-border rounded-t-2xl md:rounded-2xl p-5 space-y-4 z-10"
-        style={{ maxHeight: '92vh', overflowY: 'auto' }}
+        className="relative w-full md:max-w-md bg-ob-surface border border-ob-border rounded-t-2xl md:rounded-2xl z-10 flex flex-col"
+        style={{ maxHeight: '85dvh' }}
       >
+        {/* Scrollable inner */}
+        <div className="overflow-y-auto p-5 space-y-4" style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom))' }}>
         {/* Header */}
         <div className="flex items-center justify-between">
           <h2 className="text-base font-syne font-bold text-ob-text">
@@ -162,6 +164,7 @@ function ExpenseModal({ expense, onClose, onSave }) {
         >
           {saving ? 'Saving…' : expense ? 'Save changes' : 'Add expense'}
         </button>
+        </div>{/* end scrollable inner */}
       </div>
     </div>
   )
